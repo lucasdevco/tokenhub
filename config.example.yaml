@@ -1,0 +1,47 @@
+# Copy this file to config.yaml before running TokenHub.
+# Fill in the account key below, or add an account in Settings.
+# Start with: go run ./cmd/tokenhub -config config.yaml
+# Settings and logs: http://127.0.0.1:5602/settings
+# OpenAI-compatible client base URL: http://127.0.0.1:5601/v1
+server:
+  host: "127.0.0.1"
+  port: 5601
+logging:
+  enabled: true
+  console: true
+  log_dir: "logs" # Relative to the configuration file directory.
+http_client:
+  # Optional explicit upstream proxy (HTTP or SOCKS5):
+  # proxy_url: "http://127.0.0.1:6152"
+  proxy_from_environment: false
+# The management listener is separate from the proxy.
+# CLI: use -listen 127.0.0.1:5602 to set its address (not webui).
+# Select one Provider for all incoming requests; "" returns JSON 503.
+# Switching in the management UI applies immediately to new requests.
+# Saving providers/accounts in the Services UI also applies to new requests.
+# Editing this file directly still requires restarting the proxy.
+active_provider: openrouter
+providers:
+  openrouter:
+    # The full request path and query are appended to this upstream root:
+    # /v1/chat/completions -> https://openrouter.ai/api/v1/chat/completions
+    # Do not add a local Provider prefix or duplicate /v1 here.
+    base_url: "https://openrouter.ai/api"
+    # proxy_enabled: false # Optional: connect directly, bypassing http_client proxy settings.
+    # logging: false # Optional: disable request logging for this Provider.
+    name: "OpenRouter"
+    kind: "openrouter"
+    active_account: personal
+    accounts:
+      - id: personal
+        name: "Personal"
+        # Keys are literal values; environment references are not supported.
+        key: "your-openrouter-api-key"
+    authorization:
+      # These header/template values are also the defaults when omitted.
+      header: "Authorization"
+      template: "Bearer {}"
+      # Optional: require this credential from local clients.
+      # client_key: "your-local-client-key"
+# Without authorization, the client's authentication headers pass through.
+# TokenHub preserves protocol paths and does not convert API protocols.

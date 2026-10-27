@@ -1,0 +1,54 @@
+.request-examples {
+  max-width: 1008px;
+  margin: 0 auto;
+  padding-bottom: 32px;
+}
+.example-fields,
+.example-code {
+  max-width: 960px;
+}
+.example-code {
+  margin: 24px 0 16px;
+}
+.example-code-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.example-code-header h2 {
+  margin: 0;
+}
+.example-code-header > code {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.example-code-header button {
+  margin-left: auto;
+}
+.example-code pre {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  tab-size: 2;
+}
+.example-code pre:focus-visible {
+  outline: 2px solid var(--accent-focus);
+  outline-offset: 2px;
+}
+.example-code [role="status"] {
+  color: var(--muted);
+}
+.example-code [role="alert"] {
+  color: var(--color-destructive);
+}
+@media (max-width: 600px) {
+  .request-examples .field {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

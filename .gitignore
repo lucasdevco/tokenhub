@@ -1,0 +1,48 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Command binaries
+/cmd/tokenhub/tokenhub
+/logging-server/logging-server
+
+logs*/
+test_logs/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Dependency directories and language caches
+# vendor/
+__pycache__/
+*.py[cod]
+
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
+.env
+.env-profiles.json
+
+certs/
+config.yaml
+# Desktop and frontend builds
+/build/
+/web/node_modules/
+/web/dist/
+/.impeccable/
+/.pnpm-store/
+
+# React log viewer source is not a capture directory
+!/web/src/logs/
+!/web/src/logs/**
