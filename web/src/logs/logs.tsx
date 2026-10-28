@@ -45,7 +45,7 @@ const columnHints: Record<string, string> = {
     "本地开始处理请求到发起上游 HTTP 请求的耗时，不含网络和上游等待",
   "首 Token 耗时 (ms)":
     "从请求开始到收到上游首个内容、思考或工具调用增量的耗时；压缩流无法可靠定位时留空",
-  "总耗时 (ms)":
+  "总耗时 (s)":
     "从 TokenHub 收到请求到响应结束的总耗时，包含流式输出全过程；未结束时留空，异常结束时显示实际耗时",
   结束原因: "上游的 finish_reason / stop_reason；Responses API 使用结束状态或 incomplete_details.reason",
 };
@@ -341,7 +341,7 @@ export default function Logs() {
                             "调用方",
                             "输入 Token",
                             "输出 Token",
-                            "总耗时 (ms)",
+                            "总耗时 (s)",
                             "生成速度 (tokens/s)",
                             "路由耗时 (ms)",
                             "首 Token 耗时 (ms)",
@@ -448,7 +448,8 @@ export default function Logs() {
                                 {metric(
                                   item.state === "unfinished"
                                     ? undefined
-                                    : item.duration_ms,
+                                    : item.duration_ms / 1000,
+                                  2,
                                 )}
                               </TableCell>
                               <TableCell className="capture-number">

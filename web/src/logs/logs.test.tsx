@@ -201,7 +201,7 @@ test("caller column shows the client and preserves the full User-Agent", async (
     "调用方",
     "输入 Token",
     "输出 Token",
-    "总耗时 (ms)",
+    "总耗时 (s)",
     "生成速度 (tokens/s)",
     "路由耗时 (ms)",
     "首 Token 耗时 (ms)",
@@ -223,7 +223,7 @@ test("caller column shows the client and preserves the full User-Agent", async (
     "Claude CLI",
     "0",
     "120",
-    "10",
+    "0.01",
     "60",
     "0",
     "250",
@@ -247,7 +247,7 @@ test("unavailable inference metrics stay empty and request details remain access
       .getAllByRole("cell")
       .slice(6)
       .map((cell) => cell.textContent),
-  ).toEqual([...Array(2).fill("—"), "10", ...Array(6).fill("—")]);
+  ).toEqual([...Array(2).fill("—"), "0.01", ...Array(6).fill("—")]);
   fireEvent.click(button);
   expect(await screen.findByRole("dialog", { name: "请求详情" })).toBeTruthy();
 });
@@ -277,7 +277,7 @@ test.each([
     expect(cell.classList.contains(className as string)).toBe(true);
     expect(
       within(cell.closest("tr")!).getAllByRole("cell")[8].textContent,
-    ).toBe(state === "unfinished" ? "—" : "10");
+    ).toBe(state === "unfinished" ? "—" : "0.01");
   },
 );
 
