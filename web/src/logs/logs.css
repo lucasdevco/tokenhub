@@ -419,8 +419,8 @@
   width: 120px;
 }
 .capture-table table:has(.capture-link[aria-haspopup]) th:nth-child(6),
-.capture-table table:has(.capture-link[aria-haspopup]) th:nth-child(10),
-.capture-table table:has(.capture-link[aria-haspopup]) th:nth-child(11) {
+.capture-table table:has(.capture-link[aria-haspopup]) th:nth-child(11),
+.capture-table table:has(.capture-link[aria-haspopup]) th:nth-child(12) {
   width: 160px;
 }
 .capture-table

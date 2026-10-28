@@ -341,10 +341,10 @@ export default function Logs() {
                             "调用方",
                             "输入 Token",
                             "输出 Token",
+                            "总耗时 (ms)",
                             "生成速度 (tokens/s)",
                             "路由耗时 (ms)",
                             "首 Token 耗时 (ms)",
-                            "总耗时 (ms)",
                             "费用",
                             "用量类型",
                             "结束原因",
@@ -445,6 +445,13 @@ export default function Logs() {
                                 {metric(item.metadata.output_tokens)}
                               </TableCell>
                               <TableCell className="capture-number">
+                                {metric(
+                                  item.state === "unfinished"
+                                    ? undefined
+                                    : item.duration_ms,
+                                )}
+                              </TableCell>
+                              <TableCell className="capture-number">
                                 {metric(item.metadata.tokens_per_second, 1)}
                               </TableCell>
                               <TableCell className="capture-number">
@@ -454,13 +461,6 @@ export default function Logs() {
                                 {metric(
                                   item.metadata.time_to_first_token_ms,
                                   1,
-                                )}
-                              </TableCell>
-                              <TableCell className="capture-number">
-                                {metric(
-                                  item.state === "unfinished"
-                                    ? undefined
-                                    : item.duration_ms,
                                 )}
                               </TableCell>
                               <TableCell className="capture-number">
