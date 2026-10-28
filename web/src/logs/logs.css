@@ -398,7 +398,7 @@
 }
 .capture-table table:has(.capture-link[aria-haspopup]) {
   table-layout: fixed;
-  min-width: 2160px;
+  min-width: 2270px;
 }
 .capture-table table:has(.capture-link[aria-haspopup]) th {
   width: 110px;
@@ -425,7 +425,7 @@
 }
 .capture-table
   table:has(.capture-link[aria-haspopup])
-  th:nth-child(n + 7):not(:nth-child(13)):not(:nth-child(14)) {
+  th:nth-child(n + 7):not(:nth-child(14)):not(:nth-child(15)) {
   text-align: right;
 }
 .capture-model,

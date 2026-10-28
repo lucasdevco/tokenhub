@@ -204,6 +204,7 @@ test("caller column shows the client and preserves the full User-Agent", async (
     "生成速度 (tokens/s)",
     "路由耗时 (ms)",
     "首 Token 耗时 (ms)",
+    "总耗时 (ms)",
     "费用",
     "用量类型",
     "结束原因",
@@ -225,6 +226,7 @@ test("caller column shows the client and preserves the full User-Agent", async (
     "60",
     "0",
     "250",
+    "10",
     "—",
     "—",
     "end_turn",
@@ -245,7 +247,7 @@ test("unavailable inference metrics stay empty and request details remain access
       .getAllByRole("cell")
       .slice(6)
       .map((cell) => cell.textContent),
-  ).toEqual(Array(8).fill("—"));
+  ).toEqual([...Array(5).fill("—"), "10", ...Array(3).fill("—")]);
   fireEvent.click(button);
   expect(await screen.findByRole("dialog", { name: "请求详情" })).toBeTruthy();
 });
@@ -273,6 +275,9 @@ test.each([
     render(<RouterProvider router={createAppRouter()} />);
     const cell = await screen.findByRole("cell", { name: label as string });
     expect(cell.classList.contains(className as string)).toBe(true);
+    expect(
+      within(cell.closest("tr")!).getAllByRole("cell")[11].textContent,
+    ).toBe(state === "unfinished" ? "—" : "10");
   },
 );
 
