@@ -94,6 +94,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v8
         with:
           pattern: tokenhub-macos-*
@@ -110,7 +113,25 @@ jobs:
           rm SHA256SUMS-*.txt
           sha256sum --check SHA256SUMS.txt
           if ! gh release view "$TAG" > /dev/null 2>&1; then
-            gh release create "$TAG" --verify-tag --draft --generate-notes --title "$TAG"
+            previous_tag="$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)"
+            range="$TAG"
+            if [[ -n "$previous_tag" ]]; then
+              range="$previous_tag..$TAG"
+            fi
+            notes="$RUNNER_TEMP/release-notes.md"
+            {
+              printf '## Changes\n\n'
+              git log --no-merges --format="- %s ([%h]($GITHUB_SERVER_URL/$GH_REPO/commit/%H))" "$range"
+              printf '\n## Downloads\n\n'
+              printf 'macOS installers and CLI archives for Apple Silicon (arm64) and Intel (amd64) are attached below. CLI archives include the embedded web UI, example configuration, and README.\n\n'
+              printf 'Verify downloads with SHA256SUMS.txt. The app uses ad hoc signing and is not notarized by Apple.\n\n'
+              if [[ -n "$previous_tag" ]]; then
+                printf '[Full changelog](%s/%s/compare/%s...%s)\n' "$GITHUB_SERVER_URL" "$GH_REPO" "$previous_tag" "$TAG"
+              else
+                printf '[Full changelog](%s/%s/commits/%s)\n' "$GITHUB_SERVER_URL" "$GH_REPO" "$TAG"
+              fi
+            } > "$notes"
+            gh release create "$TAG" --verify-tag --draft --notes-file "$notes" --title "TokenHub $TAG"
           fi
           gh release upload "$TAG" ./* --clobber
           if [[ "$TAG" == *-* ]]; then
