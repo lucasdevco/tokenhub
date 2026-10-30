@@ -8,6 +8,17 @@ TokenHub 是本地 API 代理，用于转发请求并查看完整的请求与响
 
 ## 开始使用
 
+### 下载发布版本
+
+在 [GitHub Releases](https://github.com/lucasdevco/tokenhub/releases) 下载 macOS 安装包或命令行版本：
+
+- Apple Silicon 芯片选择 `macos-arm64`，Intel 芯片选择 `macos-amd64`。
+- 桌面版下载 `.dmg`，打开后将 `tokenhub.app` 拖入「应用程序」。
+- 命令行版下载 `-cli.tar.gz`，解压后运行 `./tokenhub -config config.example.yaml`。压缩包包含示例配置和 README，管理页面已嵌入程序。
+- `SHA256SUMS.txt` 提供下载文件的 SHA-256 校验值。
+
+当前安装包使用 ad hoc 签名，未经过 Apple 公证。macOS 可能阻止首次打开，确认下载来源后可在「系统设置 → 隐私与安全性」中允许打开。
+
 ### macOS 客户端
 
 打开 `tokenhub.app`，点击菜单栏图标：
@@ -51,6 +62,19 @@ cp config.example.yaml config.yaml
 支持 `./build/tokenhub config.yaml` 指定配置文件，也可通过 `-listen 127.0.0.1:5603` 更改管理监听地址；管理地址不读取配置中的 `webui` 字段。CLI 和桌面应用默认使用相同端口，请分别运行。
 
 原 `tokenhub-manager` 命令已合并到 `tokenhub`，无需再传 `-start`。
+
+### 构建与发布
+
+GitHub Actions 在推送 `main`、提交 PR 或手动运行时，检查前端格式、运行前端与两个 Go 模块的测试，并构建 Apple Silicon 和 Intel 的 DMG、CLI 压缩包。构建结果保留在对应 Actions 运行的 Artifacts 中，保留 14 天。
+
+发布新版本时，在通过构建的提交上创建并推送版本 tag：
+
+```bash
+git tag -a v0.1.0 -m "Release v0.1.0"
+git push origin v0.1.0
+```
+
+将 `v0.1.0` 替换为新版本号。Actions 会将版本写入应用，验证 DMG 和 CLI，并在两个架构都成功后自动发布 GitHub Release，附带安装包、CLI 压缩包和校验文件。`v0.1.0-rc.1` 这样的 tag 会发布为预发布版本。发布失败可重跑工作流，同名附件会被替换。
 
 ## 接入客户端
 

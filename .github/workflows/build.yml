@@ -1,0 +1,120 @@
+name: Build and release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+jobs:
+  build:
+    name: macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: amd64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/Library/Caches/go-build
+          key: go-macos-${{ matrix.arch }}-${{ hashFiles('mise.toml', 'go.sum', 'desktop/go.sum') }}
+          restore-keys: go-macos-${{ matrix.arch }}-
+
+      - name: Set package version
+        id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ "$REF_TYPE" == tag ]]; then
+            if [[ ! "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "Expected a version tag such as v0.1.0 or v0.1.0-rc.1" >&2
+              exit 1
+            fi
+            version="${REF_NAME#v}"
+          else
+            version="0.0.0-dev.${GITHUB_SHA:0:7}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          VERSION="$version" node --input-type=module -e '
+            import fs from "node:fs";
+            const path = "desktop/mygo.json";
+            const config = JSON.parse(fs.readFileSync(path, "utf8"));
+            config.version = process.env.VERSION;
+            fs.writeFileSync(path, JSON.stringify(config, null, 2) + "\n");
+          '
+
+      - name: Build CLI, app, and DMG
+        run: mise run build
+      - name: Check frontend
+        run: |
+          pnpm --dir web fmt:check
+          pnpm --dir web test
+      - name: Test Go modules
+        run: |
+          go test ./...
+          (cd desktop && go test ./...)
+      - name: Package and verify artifacts
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: bash scripts/package-macos.sh "$VERSION" "$EXPECTED_ARCH"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tokenhub-macos-${{ matrix.arch }}
+          path: build/release/*
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish release
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: tokenhub-macos-*
+          merge-multiple: true
+          path: release
+      - name: Verify checksums and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        working-directory: release
+        run: |
+          cat SHA256SUMS-*.txt > SHA256SUMS.txt
+          rm SHA256SUMS-*.txt
+          sha256sum --check SHA256SUMS.txt
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --draft --generate-notes --title "$TAG"
+          fi
+          gh release upload "$TAG" ./* --clobber
+          if [[ "$TAG" == *-* ]]; then
+            gh release edit "$TAG" --draft=false --prerelease
+          else
+            gh release edit "$TAG" --draft=false --prerelease=false --latest
+          fi
