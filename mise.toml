@@ -34,7 +34,7 @@ go build -o build/tokenhub ./cmd/tokenhub
 description = "Package the macOS menu-bar app and disk image"
 depends = ["build:web"]
 dir = "desktop"
-run = "go run github.com/egoist/mygo/cmd/mygo@v0.4.5 build"
+run = "go run github.com/egoist/mygo/cmd/mygo@v0.4.8 build"
 
 [tasks."dev:web"]
 description = "Start Vite with hot reload (run dev:desktop in another terminal)"

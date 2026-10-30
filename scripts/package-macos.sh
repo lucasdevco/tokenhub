@@ -20,16 +20,21 @@ hdiutil verify "$dmg"
 ./build/tokenhub -h
 
 mountpoint="$(mktemp -d)"
+disk=""
 cleanup() {
-  hdiutil detach "$mountpoint" -force >/dev/null 2>&1 || true
+  if [[ -n "$disk" ]]; then
+    hdiutil detach "$disk" -force >/dev/null 2>&1 || true
+  fi
   rmdir "$mountpoint"
 }
 trap cleanup EXIT
-hdiutil attach -readonly -nobrowse -noautoopen -mountpoint "$mountpoint" "$dmg"
+disk="$(hdiutil attach -readonly -nobrowse -noautoopen -mountpoint "$mountpoint" "$dmg" |
+  awk '/^\/dev\/disk/ && !disk { disk = $1 } END { print disk }')"
+[[ "$disk" == /dev/disk* ]]
 test -x "$mountpoint/tokenhub.app/Contents/MacOS/tokenhub"
 test -L "$mountpoint/Applications"
 cmp "$app/Contents/MacOS/tokenhub" "$mountpoint/tokenhub.app/Contents/MacOS/tokenhub"
-hdiutil detach "$mountpoint"
+hdiutil detach "$disk" -force
 rmdir "$mountpoint"
 trap - EXIT
 
