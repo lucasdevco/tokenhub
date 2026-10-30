@@ -32,27 +32,11 @@ type Service = {
   logging: boolean;
   proxy_enabled: boolean;
 };
-const presets = [
-  {
-    id: "openrouter",
-    name: "OpenRouter",
-    address: "https://openrouter.ai/api",
-    mark: "OR",
-  },
-  {
-    id: "openai",
-    name: "OpenAI",
-    address: "https://api.openai.com",
-    mark: "OA",
-  },
-  {
-    id: "anthropic",
-    name: "Anthropic",
-    address: "https://api.anthropic.com",
-    mark: "A",
-  },
-  { id: "custom", name: "自定义服务", address: "", mark: "" },
-];
+const serviceMarks: Record<string, string> = {
+  openrouter: "OR",
+  openai: "OA",
+  anthropic: "A",
+};
 type Catalog = {
   services: Service[];
   active: string;
@@ -168,9 +152,7 @@ function Picker({
 function ServiceMark({ kind }: { kind: string }) {
   return (
     <span className={`pa-mark pa-mark-${kind}`} aria-hidden="true">
-      {presets.find((preset) => preset.id === kind)?.mark || (
-        <Waypoints size={20} />
-      )}
+      {serviceMarks[kind] || <Waypoints size={20} />}
     </span>
   );
 }
@@ -182,7 +164,6 @@ export default function ProviderSettings() {
   const [editor, setEditor] = useState<Service | null>(null);
   const [baseline, setBaseline] = useState("");
   const [adding, setAdding] = useState(false);
-  const [choosing, setChoosing] = useState(false);
   const [accountEditor, setAccountEditor] = useState<Account | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState("");
@@ -285,36 +266,27 @@ export default function ProviderSettings() {
     setEditor(structuredClone(service));
     setBaseline(JSON.stringify(service));
     setAdding(false);
-    setChoosing(false);
     setAccountEditor(null);
     setShowKey(false);
     setError("");
     setDeleting(false);
   }
-  function choose() {
+  function create() {
     if (busy || (dirty && !confirm("放弃未保存的修改？"))) return;
-    setEditor(null);
-    setAccountEditor(null);
-    setChoosing(true);
-    setError("");
-  }
-  function create(kind: string) {
-    const preset = presets.find((item) => item.id === kind)!;
     const service: Service = {
       id: crypto.randomUUID(),
-      name: kind === "custom" ? "" : preset.name,
-      kind,
-      address: preset.address,
+      name: "",
+      kind: "custom",
+      address: "",
       accounts: [],
       active: "",
-      header: kind === "anthropic" ? "x-api-key" : "Authorization",
-      template: kind === "anthropic" ? "{}" : "Bearer {}",
+      header: "Authorization",
+      template: "Bearer {}",
       logging: true,
       proxy_enabled: true,
     };
     setEditor(service);
     setBaseline(JSON.stringify(service));
-    setChoosing(false);
     setAdding(true);
     setAccountEditor({ id: crypto.randomUUID(), name: "个人账号", key: "" });
     setShowKey(false);
@@ -326,7 +298,6 @@ export default function ProviderSettings() {
     if (busy) return;
     if (dirty && !confirm("放弃未保存的修改？")) return;
     setEditor(null);
-    setChoosing(false);
     setAccountEditor(null);
     setError("");
   }
@@ -497,9 +468,7 @@ export default function ProviderSettings() {
                 <Button
                   size="sm"
                   disabled={busy || catalog.status.pending}
-                  onClick={() => {
-                    choose();
-                  }}
+                  onClick={create}
                 >
                   <Plus />
                   添加服务商
@@ -556,8 +525,8 @@ export default function ProviderSettings() {
                   <div className="pa-services">
                     {visible.map((service) => (
                       <button
-                        className={`pa-service-row${!choosing && editor?.id === service.id ? " selected" : ""}`}
-                        aria-pressed={!choosing && editor?.id === service.id}
+                        className={`pa-service-row${editor?.id === service.id ? " selected" : ""}`}
+                        aria-pressed={editor?.id === service.id}
                         key={service.id}
                         onClick={() => open(service)}
                         aria-label={`编辑 ${service.name}`}
@@ -599,13 +568,13 @@ export default function ProviderSettings() {
                         <p>
                           {services.length
                             ? "试试其他名称、地址或账号。"
-                            : "选择服务商，填写 API Key 即可开始。"}
+                            : "填写服务名称、地址和 API Key 即可开始。"}
                         </p>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() =>
-                            services.length ? setSearch("") : choose()
+                            services.length ? setSearch("") : create()
                           }
                         >
                           {services.length ? "清除搜索" : "添加服务商"}
@@ -623,9 +592,7 @@ export default function ProviderSettings() {
                 >
                   <div className="pa-dialog-heading">
                     <h2 id="pa-editor-title">
-                      {choosing || adding
-                        ? "添加服务商"
-                        : editor?.name || "服务商设置"}
+                      {adding ? "添加服务商" : editor?.name || "服务商设置"}
                     </h2>
                     <Button
                       variant="ghost"
@@ -637,374 +604,339 @@ export default function ProviderSettings() {
                     </Button>
                   </div>
                   <p className="pa-dialog-description">
-                    {choosing
-                      ? "选择服务商，常用地址会自动填写。"
+                    {adding
+                      ? "填写自定义服务的名称、地址和 API Key。"
                       : editor
                         ? "管理此服务商的地址和账号。"
                         : "从左侧选择服务商，编辑地址或管理账号。"}
                   </p>
-                  {choosing ? (
-                    <div className="pa-presets">
-                      {presets.map((preset) => (
-                        <button
-                          className="pa-preset"
-                          key={preset.id}
-                          onClick={() => create(preset.id)}
-                        >
-                          <ServiceMark kind={preset.id} />
-                          <span>
-                            <strong>{preset.name}</strong>
-                            <small>
-                              {preset.id === "custom"
-                                ? "其他兼容服务或本地服务"
-                                : preset.address.replace("https://", "")}
-                            </small>
-                          </span>
-                          <ChevronRight size={16} />
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    editor && (
-                      <form
-                        onSubmit={(event) => {
-                          event.preventDefault();
-                          save();
-                        }}
-                      >
-                        <fieldset disabled={busy} className="pa-dialog-fields">
-                          <div className="pa-dialog-body">
-                            <Field label="名称">
-                              <Input
-                                value={editor.name}
-                                placeholder="例如：OpenRouter"
-                                onChange={(event) =>
-                                  patch({ name: event.target.value })
-                                }
-                              />
-                            </Field>
-                            <Field label="服务地址">
-                              <Input
-                                value={editor.address}
-                                placeholder="https://api.example.com"
-                                onChange={(event) =>
-                                  patch({ address: event.target.value })
-                                }
-                              />
-                            </Field>
-                            <div className="pa-section-title">
-                              <h2>
-                                账号 <span>{editor.accounts.length}</span>
-                              </h2>
-                              {!accountEditor && (
+                  {editor && (
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        save();
+                      }}
+                    >
+                      <fieldset disabled={busy} className="pa-dialog-fields">
+                        <div className="pa-dialog-body">
+                          <Field label="名称">
+                            <Input
+                              autoFocus={adding}
+                              value={editor.name}
+                              placeholder="例如：OpenRouter"
+                              onChange={(event) =>
+                                patch({ name: event.target.value })
+                              }
+                            />
+                          </Field>
+                          <Field label="服务地址">
+                            <Input
+                              value={editor.address}
+                              placeholder="https://api.example.com"
+                              onChange={(event) =>
+                                patch({ address: event.target.value })
+                              }
+                            />
+                          </Field>
+                          <div className="pa-section-title">
+                            <h2>
+                              账号 <span>{editor.accounts.length}</span>
+                            </h2>
+                            {!accountEditor && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setAccountEditor({
+                                    id: crypto.randomUUID(),
+                                    name: "",
+                                    key: "",
+                                  });
+                                  setShowKey(false);
+                                  setError("");
+                                }}
+                              >
+                                <Plus />
+                                添加账号
+                              </Button>
+                            )}
+                          </div>
+                          <div className="pa-accounts">
+                            {editor.accounts.map((account) => (
+                              <div className="pa-account-row" key={account.id}>
+                                <KeyRound size={16} />
+                                <div>
+                                  <strong>{account.name}</strong>
+                                  <small>API Key 已设置</small>
+                                </div>
+                                <label className="pa-account-radio">
+                                  <input
+                                    type="radio"
+                                    name="active-account"
+                                    checked={editor.active === account.id}
+                                    onChange={() =>
+                                      patch({ active: account.id })
+                                    }
+                                  />
+                                  <span>
+                                    {editor.active === account.id
+                                      ? "当前账号"
+                                      : "使用此账号"}
+                                  </span>
+                                </label>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  disabled={!!accountEditor}
+                                  onClick={() => {
+                                    setAccountEditor({ ...account });
+                                    setShowKey(false);
+                                    setError("");
+                                  }}
+                                >
+                                  编辑
+                                </Button>
+                              </div>
+                            ))}
+                            {!editor.accounts.length && !accountEditor && (
+                              <p className="pa-no-accounts">
+                                还没有账号。本地服务可以不填密钥。
+                              </p>
+                            )}
+                          </div>
+                          {accountEditor && (
+                            <div className="pa-account-form">
+                              <h3>
+                                {editor.accounts.some(
+                                  (account) => account.id === accountEditor.id,
+                                )
+                                  ? "编辑账号"
+                                  : "新账号"}
+                              </h3>
+                              <Field label="账号名称">
+                                <Input
+                                  autoFocus={!adding}
+                                  value={accountEditor.name}
+                                  placeholder="例如：个人账号、公司账号"
+                                  onChange={(event) => {
+                                    setAccountEditor({
+                                      ...accountEditor,
+                                      name: event.target.value,
+                                    });
+                                    setError("");
+                                  }}
+                                />
+                              </Field>
+                              <Field label="API Key" inputId="pa-api-key">
+                                <div className="pa-secret">
+                                  <Input
+                                    id="pa-api-key"
+                                    type={showKey ? "text" : "password"}
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                    value={accountEditor.key}
+                                    placeholder="粘贴你的 API Key"
+                                    onChange={(event) => {
+                                      setAccountEditor({
+                                        ...accountEditor,
+                                        key: event.target.value,
+                                      });
+                                      setError("");
+                                    }}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    aria-label={
+                                      showKey ? "隐藏 API Key" : "显示 API Key"
+                                    }
+                                    aria-pressed={showKey}
+                                    onClick={() => setShowKey(!showKey)}
+                                  >
+                                    {showKey ? <EyeOff /> : <Eye />}
+                                  </Button>
+                                </div>
+                              </Field>
+                              <div className="pa-account-form-actions">
+                                {editor.accounts.some(
+                                  (account) => account.id === accountEditor.id,
+                                ) && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="danger"
+                                    onClick={() => {
+                                      if (
+                                        !confirm(
+                                          `删除账号“${accountEditor.name}”？保存服务商后生效。`,
+                                        )
+                                      )
+                                        return;
+                                      const accounts = editor.accounts.filter(
+                                        (account) =>
+                                          account.id !== accountEditor.id,
+                                      );
+                                      patch({
+                                        accounts,
+                                        active:
+                                          editor.active === accountEditor.id
+                                            ? accounts[0]?.id || ""
+                                            : editor.active,
+                                      });
+                                      setAccountEditor(null);
+                                    }}
+                                  >
+                                    <Trash2 />
+                                    删除账号
+                                  </Button>
+                                )}
+                                <span />
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    setAccountEditor({
-                                      id: crypto.randomUUID(),
-                                      name: "",
-                                      key: "",
-                                    });
-                                    setShowKey(false);
+                                    setAccountEditor(null);
                                     setError("");
                                   }}
                                 >
-                                  <Plus />
-                                  添加账号
+                                  取消
                                 </Button>
-                              )}
-                            </div>
-                            <div className="pa-accounts">
-                              {editor.accounts.map((account) => (
-                                <div
-                                  className="pa-account-row"
-                                  key={account.id}
-                                >
-                                  <KeyRound size={16} />
-                                  <div>
-                                    <strong>{account.name}</strong>
-                                    <small>API Key 已设置</small>
-                                  </div>
-                                  <label className="pa-account-radio">
-                                    <input
-                                      type="radio"
-                                      name="active-account"
-                                      checked={editor.active === account.id}
-                                      onChange={() =>
-                                        patch({ active: account.id })
-                                      }
-                                    />
-                                    <span>
-                                      {editor.active === account.id
-                                        ? "当前账号"
-                                        : "使用此账号"}
-                                    </span>
-                                  </label>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={!!accountEditor}
-                                    onClick={() => {
-                                      setAccountEditor({ ...account });
-                                      setShowKey(false);
-                                      setError("");
-                                    }}
-                                  >
-                                    编辑
-                                  </Button>
-                                </div>
-                              ))}
-                              {!editor.accounts.length && !accountEditor && (
-                                <p className="pa-no-accounts">
-                                  还没有账号。本地服务可以不填密钥。
-                                </p>
-                              )}
-                            </div>
-                            {accountEditor && (
-                              <div className="pa-account-form">
-                                <h3>
-                                  {editor.accounts.some(
-                                    (account) =>
-                                      account.id === accountEditor.id,
-                                  )
-                                    ? "编辑账号"
-                                    : "新账号"}
-                                </h3>
-                                <Field label="账号名称">
-                                  <Input
-                                    autoFocus
-                                    value={accountEditor.name}
-                                    placeholder="例如：个人账号、公司账号"
-                                    onChange={(event) => {
-                                      setAccountEditor({
-                                        ...accountEditor,
-                                        name: event.target.value,
-                                      });
-                                      setError("");
-                                    }}
-                                  />
-                                </Field>
-                                <Field label="API Key" inputId="pa-api-key">
-                                  <div className="pa-secret">
-                                    <Input
-                                      id="pa-api-key"
-                                      type={showKey ? "text" : "password"}
-                                      autoComplete="off"
-                                      spellCheck={false}
-                                      value={accountEditor.key}
-                                      placeholder="粘贴你的 API Key"
-                                      onChange={(event) => {
-                                        setAccountEditor({
-                                          ...accountEditor,
-                                          key: event.target.value,
-                                        });
-                                        setError("");
-                                      }}
-                                    />
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      aria-label={
-                                        showKey
-                                          ? "隐藏 API Key"
-                                          : "显示 API Key"
-                                      }
-                                      aria-pressed={showKey}
-                                      onClick={() => setShowKey(!showKey)}
-                                    >
-                                      {showKey ? <EyeOff /> : <Eye />}
-                                    </Button>
-                                  </div>
-                                </Field>
-                                <div className="pa-account-form-actions">
-                                  {editor.accounts.some(
-                                    (account) =>
-                                      account.id === accountEditor.id,
-                                  ) && (
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="danger"
-                                      onClick={() => {
-                                        if (
-                                          !confirm(
-                                            `删除账号“${accountEditor.name}”？保存服务商后生效。`,
-                                          )
-                                        )
-                                          return;
-                                        const accounts = editor.accounts.filter(
-                                          (account) =>
-                                            account.id !== accountEditor.id,
-                                        );
-                                        patch({
-                                          accounts,
-                                          active:
-                                            editor.active === accountEditor.id
-                                              ? accounts[0]?.id || ""
-                                              : editor.active,
-                                        });
-                                        setAccountEditor(null);
-                                      }}
-                                    >
-                                      <Trash2 />
-                                      删除账号
-                                    </Button>
-                                  )}
-                                  <span />
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => {
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const next = applyAccount();
+                                    if (next) {
+                                      setEditor(next);
                                       setAccountEditor(null);
                                       setError("");
-                                    }}
-                                  >
-                                    取消
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      const next = applyAccount();
-                                      if (next) {
-                                        setEditor(next);
-                                        setAccountEditor(null);
-                                        setError("");
-                                      }
-                                    }}
-                                  >
-                                    完成
-                                  </Button>
-                                </div>
+                                    }
+                                  }}
+                                >
+                                  完成
+                                </Button>
                               </div>
-                            )}
-                            <details className="pa-advanced">
-                              <summary>
-                                高级设置
-                                <ChevronDown size={14} />
-                              </summary>
-                              <Field label="鉴权请求头">
-                                <Input
-                                  value={editor.header}
-                                  onChange={(event) =>
-                                    patch({ header: event.target.value })
-                                  }
-                                />
-                              </Field>
-                              <Field label="密钥格式">
-                                <Input
-                                  value={editor.template}
-                                  onChange={(event) =>
-                                    patch({ template: event.target.value })
-                                  }
-                                />
-                              </Field>
-                              <Field
-                                label="上游代理"
-                                help="开启时使用常用配置中的上游代理设置，关闭时直接连接服务商。"
-                              >
-                                <Toggle
-                                  label="启用上游代理"
-                                  value={editor.proxy_enabled}
-                                  onChange={(value) =>
-                                    patch({ proxy_enabled: value })
-                                  }
-                                />
-                              </Field>
-                              <Field label="请求日志">
-                                <Toggle
-                                  label="记录此服务商的请求"
-                                  value={editor.logging}
-                                  onChange={(value) =>
-                                    patch({ logging: value })
-                                  }
-                                />
-                              </Field>
-                            </details>
-                            {adding && (
-                              <label className="pa-use-after">
-                                <input
-                                  type="checkbox"
-                                  checked={addToCurrent}
-                                  onChange={(event) =>
-                                    setAddToCurrent(event.target.checked)
-                                  }
-                                />
-                                添加后使用此服务商
-                              </label>
-                            )}
-                            {error && (
-                              <p className="pa-error" role="alert">
-                                {error}
-                              </p>
-                            )}
-                            {deleting && (
-                              <div className="pa-delete-confirm" role="alert">
-                                <p>删除 {editor.name} 及其所有账号？</p>
-                                <div>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setDeleting(false)}
-                                  >
-                                    取消
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={remove}
-                                  >
-                                    确认删除
-                                  </Button>
-                                </div>
+                            </div>
+                          )}
+                          <details className="pa-advanced">
+                            <summary>
+                              高级设置
+                              <ChevronDown size={14} />
+                            </summary>
+                            <Field label="鉴权请求头">
+                              <Input
+                                value={editor.header}
+                                onChange={(event) =>
+                                  patch({ header: event.target.value })
+                                }
+                              />
+                            </Field>
+                            <Field label="密钥格式">
+                              <Input
+                                value={editor.template}
+                                onChange={(event) =>
+                                  patch({ template: event.target.value })
+                                }
+                              />
+                            </Field>
+                            <Field
+                              label="上游代理"
+                              help="开启时使用常用配置中的上游代理设置，关闭时直接连接服务商。"
+                            >
+                              <Toggle
+                                label="启用上游代理"
+                                value={editor.proxy_enabled}
+                                onChange={(value) =>
+                                  patch({ proxy_enabled: value })
+                                }
+                              />
+                            </Field>
+                            <Field label="请求日志">
+                              <Toggle
+                                label="记录此服务商的请求"
+                                value={editor.logging}
+                                onChange={(value) => patch({ logging: value })}
+                              />
+                            </Field>
+                          </details>
+                          {adding && (
+                            <label className="pa-use-after">
+                              <input
+                                type="checkbox"
+                                checked={addToCurrent}
+                                onChange={(event) =>
+                                  setAddToCurrent(event.target.checked)
+                                }
+                              />
+                              添加后使用此服务商
+                            </label>
+                          )}
+                          {error && (
+                            <p className="pa-error" role="alert">
+                              {error}
+                            </p>
+                          )}
+                          {deleting && (
+                            <div className="pa-delete-confirm" role="alert">
+                              <p>删除 {editor.name} 及其所有账号？</p>
+                              <div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setDeleting(false)}
+                                >
+                                  取消
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={remove}
+                                >
+                                  确认删除
+                                </Button>
                               </div>
-                            )}
-                          </div>
-                          <div className="pa-dialog-footer">
-                            {!adding && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="danger"
-                                onClick={() => setDeleting(true)}
-                              >
-                                <Trash2 />
-                                删除服务商
-                              </Button>
-                            )}
-                            <span />
+                            </div>
+                          )}
+                        </div>
+                        <div className="pa-dialog-footer">
+                          {!adding && (
                             <Button
                               type="button"
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={close}
+                              className="danger"
+                              onClick={() => setDeleting(true)}
                             >
-                              取消
+                              <Trash2 />
+                              删除服务商
                             </Button>
-                            <Button type="submit" size="sm">
-                              {busy
-                                ? "保存中…"
-                                : adding
-                                  ? "添加服务商"
-                                  : "保存"}
-                            </Button>
-                          </div>
-                        </fieldset>
-                      </form>
-                    )
+                          )}
+                          <span />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={close}
+                          >
+                            取消
+                          </Button>
+                          <Button type="submit" size="sm">
+                            {busy ? "保存中…" : adding ? "添加服务商" : "保存"}
+                          </Button>
+                        </div>
+                      </fieldset>
+                    </form>
                   )}
 
-                  {!choosing && !editor && (
+                  {!editor && (
                     <div className="pa-empty">
                       <Waypoints size={28} />
                       <strong>选择一个服务商</strong>

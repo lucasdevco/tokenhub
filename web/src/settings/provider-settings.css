@@ -177,8 +177,7 @@
 .pa-service-row:hover {
   background: var(--surface-soft);
 }
-.pa-service-row:focus-visible,
-.pa-preset:focus-visible {
+.pa-service-row:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
   border-radius: 6px;
@@ -457,42 +456,6 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-}
-.pa-presets {
-  padding: 0 16px 16px;
-}
-.pa-preset {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  width: 100%;
-  padding: 14px 8px;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: white;
-  text-align: left;
-  cursor: pointer;
-}
-.pa-preset:hover {
-  background: #f7f7f9;
-}
-.pa-preset > span:nth-child(2) {
-  flex: 1;
-  min-width: 0;
-}
-.pa-preset strong {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-}
-.pa-preset small {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 5px;
-}
-.pa-preset > svg {
-  color: var(--muted);
 }
 @media (max-width: 1000px) {
   .pa-main {

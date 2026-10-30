@@ -260,6 +260,53 @@ test("settings no longer expose or request environment configuration", async () 
   ).toBe(false);
 });
 
+test.each([false, true])(
+  "adding a provider opens the custom form directly (empty catalog: %s)",
+  async (empty) => {
+    if (empty) providerCatalog.services = [];
+    renderSettings("/settings/providers");
+    await screen.findByText("点击服务商，编辑地址或管理它的账号。");
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "添加服务商" })[empty ? 1 : 0],
+    );
+    const name = screen.getByLabelText("名称");
+    expect(document.activeElement).toBe(name);
+    expect(name).toHaveProperty("value", "");
+    expect(screen.getByLabelText("服务地址")).toHaveProperty("value", "");
+    expect(screen.getByLabelText("API Key")).toBeTruthy();
+    expect(screen.queryByText("选择服务商，常用地址会自动填写。")).toBeNull();
+    expect(
+      screen.getByText("高级设置", { selector: "summary" }).closest("details")
+        ?.open,
+    ).toBe(false);
+    fireEvent.change(name, { target: { value: "自定义服务" } });
+    fireEvent.change(screen.getByLabelText("服务地址"), {
+      target: { value: "https://api.example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("API Key"), {
+      target: { value: "sk-custom" },
+    });
+    fireEvent.submit(name.closest("form")!);
+    await screen.findByText("已添加 自定义服务，新请求将使用保存后的设置。");
+    const mutation = fetchMock.mock.calls.find(
+      ([path, init]) => path === "/api/providers" && init?.method === "POST",
+    );
+    expect(JSON.parse(String(mutation?.[1]?.body))).toMatchObject({
+      action: "save",
+      new: true,
+      activate: true,
+      service: {
+        kind: "custom",
+        name: "自定义服务",
+        address: "https://api.example.com",
+        header: "Authorization",
+        template: "Bearer {}",
+        accounts: [{ name: "个人账号", key: "sk-custom" }],
+      },
+    });
+  },
+);
+
 test("service and account changes persist with a management session and version", async () => {
   const router = renderSettings("/settings/providers");
   await screen.findByRole("heading", { name: "服务商" });
