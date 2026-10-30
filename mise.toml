@@ -1,7 +1,8 @@
 [tools]
 go = "1.27.1"
 node = "24.14.1"
-pnpm = "11.8.0"
+# Use the JavaScript distribution, which also supports Intel Macs.
+"npm:pnpm" = "11.8.0"
 
 [tasks."install:web"]
 description = "Install frontend dependencies from the lockfile"
