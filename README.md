@@ -12,10 +12,21 @@ TokenHub 是本地 API 代理，用于转发请求并查看完整的请求与响
 
 在 [GitHub Releases](https://github.com/lucasdevco/tokenhub/releases) 下载 macOS 安装包或命令行版本：
 
-- Apple Silicon 芯片选择 `macos-arm64`，Intel 芯片选择 `macos-amd64`。
-- 桌面版下载 `.dmg`，打开后将 `tokenhub.app` 拖入「应用程序」。
-- 命令行版下载 `-cli.tar.gz`，解压后运行 `./tokenhub -config config.example.yaml`。压缩包包含示例配置和 README，管理页面已嵌入程序。
-- `SHA256SUMS.txt` 提供下载文件的 SHA-256 校验值。
+- Apple Silicon 芯片选择 `darwin-arm64`，Intel 芯片选择 `darwin-amd64`。
+- 桌面版下载 `tokenhub-darwin-<架构>.dmg`，打开后将 `tokenhub.app` 拖入「应用程序」。
+- 命令行版下载 `tokenhub-cli-darwin-<架构>`，管理页面已嵌入程序，无需另外安装前端。
+- `SHA256SUMS` 提供下载文件的 SHA-256 校验值。版本号保存在 Release 标题和 tag 中，附件名称保持固定。
+
+以 Apple Silicon 的 CLI 为例：
+
+```bash
+chmod +x tokenhub-cli-darwin-arm64
+./tokenhub-cli-darwin-arm64 -config "$HOME/.tokenhub/config.yaml"
+```
+
+首次启动会创建配置文件，随后在设置页添加服务商。Intel 芯片将命令中的 `arm64` 替换为 `amd64`。
+
+`v0.1.0` 保留原命名：`tokenhub-v0.1.0-macos-<架构>.dmg`、`-cli.tar.gz` 和 `SHA256SUMS.txt`。旧 CLI 压缩包解压后运行 `./tokenhub -config config.example.yaml`。
 
 当前安装包使用 ad hoc 签名，未经过 Apple 公证。macOS 可能阻止首次打开，确认下载来源后可在「系统设置 → 隐私与安全性」中允许打开。
 
@@ -65,16 +76,18 @@ cp config.example.yaml config.yaml
 
 ### 构建与发布
 
-GitHub Actions 在推送 `main`、提交 PR 或手动运行时，检查前端格式、运行前端与两个 Go 模块的测试，并构建 Apple Silicon 和 Intel 的 DMG、CLI 压缩包。构建结果保留在对应 Actions 运行的 Artifacts 中，保留 14 天。
+GitHub Actions 在推送 `main`、提交 PR 或手动运行时，检查前端格式、运行前端与两个 Go 模块的测试，并构建 Apple Silicon 和 Intel 的 DMG、独立 CLI 程序。构建结果保留在对应 Actions 运行的 Artifacts 中，保留 14 天。
 
 发布新版本时，在通过构建的提交上创建并推送版本 tag：
 
 ```bash
-git tag -a v0.1.0 -m "Release v0.1.0"
-git push origin v0.1.0
+git tag -a v0.1.1 -m "Release v0.1.1"
+git push origin v0.1.1
 ```
 
-将 `v0.1.0` 替换为新版本号。Actions 会将版本写入应用，验证 DMG 和 CLI，并在两个架构都成功后自动发布 GitHub Release，附带安装包、CLI 压缩包和校验文件。`v0.1.0-rc.1` 这样的 tag 会发布为预发布版本。发布失败可重跑工作流，同名附件会被替换。
+将 `v0.1.1` 替换为新版本号。Actions 会将版本写入应用，验证 DMG 和 CLI，并在两个架构都成功后自动发布 GitHub Release，附带安装包、CLI 和校验文件。更新说明按功能、修复、改进等类别生成，并包含下载表格。`v0.1.1-rc.1` 这样的 tag 会发布为预发布版本。
+
+也可在 Actions 的「Build and release → Run workflow」中填写已有 tag 的版本号，例如 `0.1.1`，勾选 `publish` 后发布。不勾选时只构建和上传 Artifacts；版本号留空时构建所选 ref。手动重建使用所选 tag 的源代码和当前工作流的打包规则。发布失败可重跑，同名附件和更新说明会被更新。
 
 ## 接入客户端
 

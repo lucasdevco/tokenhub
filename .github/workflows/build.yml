@@ -6,17 +6,72 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Existing tag version to build (e.g. 0.1.1, without v; empty builds the selected ref)"
+        type: string
+      publish:
+        description: "Publish a release after building (off: build only)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+  group: build-${{ github.ref }}-${{ inputs.version }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && !inputs.publish }}
 
 jobs:
+  prepare:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      ref: ${{ steps.version.outputs.ref }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Resolve source and version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+        run: |
+          ref="$GITHUB_SHA"
+          publish=false
+          if [[ -n "$INPUT_VERSION" ]]; then
+            version="$INPUT_VERSION"
+            ref="refs/tags/v$version"
+            publish="$INPUT_PUBLISH"
+          elif [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            if [[ "$GITHUB_EVENT_NAME" == push || "$INPUT_PUBLISH" == true ]]; then
+              publish=true
+            fi
+          else
+            version="0.0.0-dev.${GITHUB_SHA:0:7}"
+            if [[ "$INPUT_PUBLISH" == true ]]; then
+              echo "Select an existing version tag to publish" >&2
+              exit 1
+            fi
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Expected a version such as 0.1.1 or 0.1.1-rc.1" >&2
+            exit 1
+          fi
+          ref="$(git rev-parse --verify "$ref^{commit}")"
+          {
+            echo "version=$version"
+            echo "ref=$ref"
+            echo "publish=$publish"
+          } >> "$GITHUB_OUTPUT"
+
   build:
     name: macOS ${{ matrix.arch }}
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
@@ -31,6 +86,14 @@ jobs:
       CI: "true"
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+      - name: Checkout packaging tools
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-tools
+          sparse-checkout: scripts
       - uses: jdx/mise-action@v5
       - uses: actions/cache@v6
         with:
@@ -41,22 +104,10 @@ jobs:
           restore-keys: go-macos-${{ matrix.arch }}-
 
       - name: Set package version
-        id: version
         env:
-          REF_TYPE: ${{ github.ref_type }}
-          REF_NAME: ${{ github.ref_name }}
+          VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          if [[ "$REF_TYPE" == tag ]]; then
-            if [[ ! "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-              echo "Expected a version tag such as v0.1.0 or v0.1.0-rc.1" >&2
-              exit 1
-            fi
-            version="${REF_NAME#v}"
-          else
-            version="0.0.0-dev.${GITHUB_SHA:0:7}"
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          VERSION="$version" node --input-type=module -e '
+          node --input-type=module -e '
             import fs from "node:fs";
             const path = "desktop/mygo.json";
             const config = JSON.parse(fs.readFileSync(path, "utf8"));
@@ -76,66 +127,67 @@ jobs:
           (cd desktop && go test ./...)
       - name: Package and verify artifacts
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.prepare.outputs.version }}
           EXPECTED_ARCH: ${{ matrix.arch }}
-        run: bash scripts/package-macos.sh "$VERSION" "$EXPECTED_ARCH"
+        run: bash .release-tools/scripts/package-macos.sh "$VERSION" "$EXPECTED_ARCH" "$GITHUB_WORKSPACE"
       - uses: actions/upload-artifact@v7
         with:
-          name: tokenhub-macos-${{ matrix.arch }}
+          name: build-darwin-${{ matrix.arch }}
           path: build/release/*
           if-no-files-found: error
           retention-days: 14
 
   release:
     name: Publish release
-    if: github.ref_type == 'tag'
-    needs: build
+    if: needs.prepare.outputs.publish == 'true'
+    needs: [prepare, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ needs.prepare.outputs.ref }}
           fetch-depth: 0
+      - name: Checkout release tools
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-tools
+          sparse-checkout: scripts
       - uses: actions/download-artifact@v8
         with:
-          pattern: tokenhub-macos-*
+          pattern: build-darwin-*
           merge-multiple: true
           path: release
       - name: Verify checksums and publish
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: v${{ needs.prepare.outputs.version }}
         working-directory: release
         run: |
-          cat SHA256SUMS-*.txt > SHA256SUMS.txt
-          rm SHA256SUMS-*.txt
-          sha256sum --check SHA256SUMS.txt
+          set -euo pipefail
+          cat SHA256SUMS-* > SHA256SUMS
+          rm SHA256SUMS-*
+          sha256sum --check SHA256SUMS
+          notes="$RUNNER_TEMP/release-notes.md"
+          python3 ../.release-tools/scripts/release-notes.py "$TAG" > "$notes"
           if ! gh release view "$TAG" > /dev/null 2>&1; then
-            previous_tag="$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)"
-            range="$TAG"
-            if [[ -n "$previous_tag" ]]; then
-              range="$previous_tag..$TAG"
-            fi
-            notes="$RUNNER_TEMP/release-notes.md"
-            {
-              printf '## Changes\n\n'
-              git log --no-merges --format="- %s ([%h]($GITHUB_SERVER_URL/$GH_REPO/commit/%H))" "$range"
-              printf '\n## Downloads\n\n'
-              printf 'macOS installers and CLI archives for Apple Silicon (arm64) and Intel (amd64) are attached below. CLI archives include the embedded web UI, example configuration, and README.\n\n'
-              printf 'Verify downloads with SHA256SUMS.txt. The app uses ad hoc signing and is not notarized by Apple.\n\n'
-              if [[ -n "$previous_tag" ]]; then
-                printf '[Full changelog](%s/%s/compare/%s...%s)\n' "$GITHUB_SERVER_URL" "$GH_REPO" "$previous_tag" "$TAG"
-              else
-                printf '[Full changelog](%s/%s/commits/%s)\n' "$GITHUB_SERVER_URL" "$GH_REPO" "$TAG"
-              fi
-            } > "$notes"
-            gh release create "$TAG" --verify-tag --draft --notes-file "$notes" --title "TokenHub $TAG"
+            gh release create "$TAG" --verify-tag --draft --notes-file "$notes" --title "tokenhub $TAG"
           fi
           gh release upload "$TAG" ./* --clobber
+          gh release edit "$TAG" --notes-file "$notes" --title "tokenhub $TAG"
           if [[ "$TAG" == *-* ]]; then
             gh release edit "$TAG" --draft=false --prerelease
           else
-            gh release edit "$TAG" --draft=false --prerelease=false --latest
+            latest_tag="$(
+              { gh release list --exclude-drafts --exclude-pre-releases --limit 100 --json tagName --jq '.[].tagName'; echo "$TAG"; } |
+                sort -V | tail -n 1
+            )"
+            latest=false
+            if [[ "$TAG" == "$latest_tag" ]]; then
+              latest=true
+            fi
+            gh release edit "$TAG" --draft=false --prerelease=false --latest="$latest"
           fi
