@@ -35,6 +35,7 @@ type app struct {
 	quitting       bool
 	copiedAddress  string
 	copiedUntil    time.Time
+	update         appUpdate
 }
 
 func (a *app) action(name string, fn func() error) {
@@ -185,6 +186,7 @@ func (a *app) ready() {
 		}()
 	})
 	ctx, cancel := context.WithCancel(context.Background())
+	a.startUpdateChecks(ctx)
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()

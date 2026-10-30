@@ -69,7 +69,7 @@ func (a *app) panelNotice() string {
 }
 
 func (a *app) panelHeight() int {
-	height := 380
+	height := 422
 	if a.panelNotice() != "" {
 		height += 32
 	}
@@ -102,6 +102,7 @@ func (a *app) view(c *ui.Context) {
 		})
 
 		menuRow(c, "logs", logsIcon, "请求日志", "浏览器", func() { a.open("/logs/") })
+		menuRow(c, "update", restartIcon, a.update.label(), "v"+mygo.App.Version(), a.openUpdate)
 		ui.Column(c).Gap(2).Shrink(0).Children(func() {
 			ui.Text(c, "诊断工具").FontSize(10).TextColor(theme.TextMuted).Padding(0, 8, 3, 8)
 			menuRow(c, "program-log", programIcon, "程序运行日志", "文件", a.openProgramLog)

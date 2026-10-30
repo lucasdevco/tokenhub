@@ -42,7 +42,19 @@ trap - EXIT
 cp "$dmg" "$out/$installer"
 cp build/tokenhub "$out/$cli"
 "$out/$cli" -h
+manifest="build/darwin-$arch/update-darwin-$arch.json"
+if [[ -f "$manifest" ]]; then
+  go run "$(dirname "$0")/verify-update.go" "$manifest" desktop/mygo.json "$version" "$arch"
+  cp "$manifest" "build/darwin-$arch/tokenhub-$version-darwin-$arch.tar.gz" "$out/"
+elif [[ "${REQUIRE_UPDATES:-false}" == true ]]; then
+  echo "Signed update archive is required for a release" >&2
+  exit 1
+fi
 (
   cd "$out"
-  shasum -a 256 "$installer" "$cli" > "SHA256SUMS-$arch"
+  files=("$installer" "$cli")
+  if [[ -f "update-darwin-$arch.json" ]]; then
+    files+=("update-darwin-$arch.json" "tokenhub-$version-darwin-$arch.tar.gz")
+  fi
+  shasum -a 256 "${files[@]}" > "SHA256SUMS-$arch"
 )

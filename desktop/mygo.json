@@ -1,9 +1,14 @@
 {
   "name": "tokenhub",
   "identifier": "co.lucasdev.tokenhub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": ".",
   "icon": "resources/icon.png",
   "out": "../build",
+  "updates": {
+    "publicKey": "iyKQv35qJzNL2vnzHS6yJ/Twg1GOSD3MQdA1rPHW0UI=",
+    "github": "lucasdevco/tokenhub",
+    "deltas": 0
+  },
   "macos": { "minimumSystemVersion": "12.0" }
 }

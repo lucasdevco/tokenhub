@@ -116,7 +116,12 @@ jobs:
           '
 
       - name: Build CLI, app, and DMG
+        env:
+          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
         run: mise run build
+      - name: Require signed updates for publishing
+        if: needs.prepare.outputs.publish == 'true'
+        run: test -f "build/darwin-${{ matrix.arch }}/update-darwin-${{ matrix.arch }}.json"
       - name: Check frontend
         run: |
           pnpm --dir web fmt:check
@@ -129,6 +134,7 @@ jobs:
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
           EXPECTED_ARCH: ${{ matrix.arch }}
+          REQUIRE_UPDATES: ${{ needs.prepare.outputs.publish }}
         run: bash .release-tools/scripts/package-macos.sh "$VERSION" "$EXPECTED_ARCH" "$GITHUB_WORKSPACE"
       - uses: actions/upload-artifact@v7
         with:
