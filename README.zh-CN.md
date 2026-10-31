@@ -56,6 +56,17 @@ TokenHub 保留客户端原本的 API 协议，不做协议转换。切换服务
 
 设置页面位于 [http://127.0.0.1:5602/settings](http://127.0.0.1:5602/settings)。
 
+## 命令行运行
+
+不使用菜单栏应用时，也可以从 Releases 下载对应芯片的 CLI。以 Apple Silicon 为例：
+
+```bash
+chmod +x tokenhub-cli-darwin-arm64
+./tokenhub-cli-darwin-arm64 -config "$HOME/.tokenhub/config.yaml"
+```
+
+首次启动会创建配置文件。打开设置页面，按上面的步骤添加服务商和账号即可。按 `Ctrl+C` 退出。桌面版与命令行版使用相同端口，请分别运行。
+
 ## 数据与隐私
 
 配置和日志保存在本机，桌面版默认目录为 `~/.tokenhub`。API Key 明文保存在配置文件中；请求日志可能包含密钥和私人对话，分享前请检查。停止代理后仍可查看历史日志，退出 TokenHub 会停止代理服务。

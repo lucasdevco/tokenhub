@@ -23,8 +23,12 @@ depends = ["install:web"]
 run = "pnpm --dir web build"
 
 [tasks.build]
-description = "Build the macOS app and DMG with the embedded frontend"
-depends = ["desktop"]
+description = "Build the CLI, desktop app, and installer with the embedded frontend"
+depends = ["build:web", "desktop"]
+run = """
+mkdir -p build
+go build -trimpath -o build/tokenhub ./cmd/tokenhub
+"""
 
 [tasks.desktop]
 description = "Package the macOS menu-bar app and disk image"

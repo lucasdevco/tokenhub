@@ -56,6 +56,17 @@ Start a conversation in your client, then click Request logs (「请求日志」
 
 Settings are available at [http://127.0.0.1:5602/settings](http://127.0.0.1:5602/settings).
 
+## Run from the command line
+
+To run without the menu bar app, download the CLI for your Mac from Releases. On Apple Silicon:
+
+```bash
+chmod +x tokenhub-cli-darwin-arm64
+./tokenhub-cli-darwin-arm64 -config "$HOME/.tokenhub/config.yaml"
+```
+
+The first run creates a configuration file. Open the settings page and follow the steps above to add a provider and account. Press `Ctrl+C` to quit. The desktop app and CLI use the same ports, so run one at a time.
+
 ## Data and privacy
 
 Configuration and logs are stored locally. The desktop app uses `~/.tokenhub` by default. API keys are stored in plain text in the configuration file. Request logs may contain keys and private conversations, so review them before sharing. You can browse past logs while the proxy is stopped. Quitting TokenHub stops the proxy.

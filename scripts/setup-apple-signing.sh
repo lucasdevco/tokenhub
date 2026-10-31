@@ -49,4 +49,8 @@ node --input-type=module -e '
   }
   fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
 '
+{
+  echo "APPLE_SIGNING_IDENTITY=$identity"
+  echo "APPLE_SIGNING_KEYCHAIN=$keychain"
+} >> "$GITHUB_ENV"
 rm -f "$RUNNER_TEMP/tokenhub-signing.p12" "$RUNNER_TEMP/tokenhub-notary.p8"

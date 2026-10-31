@@ -1,5 +1,6 @@
-# Example desktop configuration, stored at ~/.tokenhub/config.yaml.
+# Copy this file to config.yaml before running TokenHub.
 # Fill in the account key below, or add an account in Settings.
+# Start with: go run ./cmd/tokenhub -config config.yaml
 # Settings and logs: http://127.0.0.1:5602/settings
 # OpenAI-compatible client base URL: http://127.0.0.1:5601/v1
 server:
@@ -14,7 +15,7 @@ http_client:
   # proxy_url: "http://127.0.0.1:6152"
   proxy_from_environment: false
 # The management listener is separate from the proxy.
-# The desktop management page uses http://127.0.0.1:5602.
+# CLI: use -listen 127.0.0.1:5602 to set its address (not webui).
 # Select one Provider for all incoming requests; "" returns JSON 503.
 # Switching in the management UI applies immediately to new requests.
 # Saving providers/accounts in the Services UI also applies to new requests.
