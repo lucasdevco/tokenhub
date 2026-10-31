@@ -129,10 +129,6 @@ jobs:
         env:
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
         run: mise run build
-      - name: Sign and notarize CLI
-        env:
-          REQUIRE_NOTARIZATION: ${{ needs.prepare.outputs.publish }}
-        run: bash .release-tools/scripts/sign-cli.sh
       - name: Require signed updates for publishing
         if: needs.prepare.outputs.publish == 'true'
         run: test -f "build/darwin-${{ matrix.arch }}/update-darwin-${{ matrix.arch }}.json"

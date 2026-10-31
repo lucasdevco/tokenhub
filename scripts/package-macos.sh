@@ -24,7 +24,6 @@ if [[ "${REQUIRE_NOTARIZATION:-false}" == true ]]; then
   grep -F 'TeamIdentifier=93MJ8HDSM3' <<< "$metadata"
   grep -F 'runtime' <<< "$metadata"
   codesign --verify --strict "$dmg"
-  codesign --verify --strict build/tokenhub
   xcrun stapler validate "$app"
   xcrun stapler validate "$dmg"
   spctl --assess --type execute --verbose=4 "$app"
