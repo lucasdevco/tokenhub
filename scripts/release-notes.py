@@ -62,9 +62,8 @@ def main():
     print('./tokenhub-cli-darwin-arm64 -config "$HOME/.tokenhub/config.yaml"\n```')
     print("\nOn Intel Macs, replace arm64 with amd64. The web UI is embedded in the binary.")
     print("The configuration file is created on first launch; add providers in Settings.")
-    print(f"\n[SHA-256 checksums]({download}/SHA256SUMS) cover the installers, CLI, and signed update files.")
+    print(f"\n[SHA-256 checksums]({download}/SHA256SUMS) cover the installers, CLI, and update files.")
     print("The menu-bar panel checks for new versions. Click the update entry to download, then restart to apply.")
-    print("The app uses ad hoc signing and is not notarized by Apple.\n")
     history = f"compare/{previous}...{tag}" if previous else f"commits/{tag}"
     print(f"[Full changelog]({base}/{history})")
 

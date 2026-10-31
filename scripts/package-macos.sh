@@ -18,6 +18,18 @@ test -x "$app/Contents/MacOS/tokenhub"
 test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
 codesign --verify --deep --strict "$app"
 hdiutil verify "$dmg"
+if [[ "${REQUIRE_NOTARIZATION:-false}" == true ]]; then
+  metadata="$(codesign --display --verbose=4 "$app" 2>&1)"
+  grep -F 'Authority=Developer ID Application: chaoqun huang (93MJ8HDSM3)' <<< "$metadata"
+  grep -F 'TeamIdentifier=93MJ8HDSM3' <<< "$metadata"
+  grep -F 'runtime' <<< "$metadata"
+  codesign --verify --strict "$dmg"
+  codesign --verify --strict build/tokenhub
+  xcrun stapler validate "$app"
+  xcrun stapler validate "$dmg"
+  spctl --assess --type execute --verbose=4 "$app"
+  spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
+fi
 ./build/tokenhub -h
 
 mountpoint="$(mktemp -d)"

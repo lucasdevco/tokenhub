@@ -81,7 +81,7 @@ jobs:
           - runner: macos-15-intel
             arch: amd64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
+    timeout-minutes: 90
     env:
       CI: "true"
     steps:
@@ -115,10 +115,24 @@ jobs:
             fs.writeFileSync(path, JSON.stringify(config, null, 2) + "\n");
           '
 
+      - name: Configure Developer ID signing and notarization
+        env:
+          APPLE_SIGNING_P12: ${{ secrets.APPLE_SIGNING_P12 }}
+          APPLE_SIGNING_PASSWORD: ${{ secrets.APPLE_SIGNING_PASSWORD }}
+          APPLE_NOTARY_KEY: ${{ secrets.APPLE_NOTARY_KEY }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          REQUIRE_NOTARIZATION: ${{ needs.prepare.outputs.publish }}
+        run: bash .release-tools/scripts/setup-apple-signing.sh
+
       - name: Build CLI, app, and DMG
         env:
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
         run: mise run build
+      - name: Sign and notarize CLI
+        env:
+          REQUIRE_NOTARIZATION: ${{ needs.prepare.outputs.publish }}
+        run: bash .release-tools/scripts/sign-cli.sh
       - name: Require signed updates for publishing
         if: needs.prepare.outputs.publish == 'true'
         run: test -f "build/darwin-${{ matrix.arch }}/update-darwin-${{ matrix.arch }}.json"
@@ -135,6 +149,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           EXPECTED_ARCH: ${{ matrix.arch }}
           REQUIRE_UPDATES: ${{ needs.prepare.outputs.publish }}
+          REQUIRE_NOTARIZATION: ${{ needs.prepare.outputs.publish }}
         run: bash .release-tools/scripts/package-macos.sh "$VERSION" "$EXPECTED_ARCH" "$GITHUB_WORKSPACE"
       - uses: actions/upload-artifact@v7
         with:
@@ -142,6 +157,11 @@ jobs:
           path: build/release/*
           if-no-files-found: error
           retention-days: 14
+      - name: Remove temporary signing keychain
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/tokenhub-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/tokenhub-signing.p12" "$RUNNER_TEMP/tokenhub-notary.p8"
 
   release:
     name: Publish release
