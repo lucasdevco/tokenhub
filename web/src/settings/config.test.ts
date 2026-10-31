@@ -1,3 +1,6 @@
+import { beforeEach as beforeEachLocale } from "vitest";
+import { setLocale } from "../i18n";
+beforeEachLocale(() => setLocale("zh-CN"));
 import { assert, test } from "vitest";
 import { readDraft, updateCredential } from "./config.ts";
 

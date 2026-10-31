@@ -1,3 +1,6 @@
+import { beforeEach as beforeEachLocale } from "vitest";
+import { setLocale } from "../i18n";
+beforeEachLocale(() => setLocale("zh-CN"));
 import { expect, test } from "vitest";
 import { relativeTime } from "./api";
 

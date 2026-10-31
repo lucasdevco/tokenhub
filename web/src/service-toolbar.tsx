@@ -1,3 +1,4 @@
+import { t, useLocale } from "./i18n";
 import { useEffect, useState } from "react";
 import { ServiceControls } from "./service-controls";
 import { request, setSession } from "./settings/settings-api";
@@ -8,6 +9,7 @@ type Config = { yaml: string; version: string };
 
 // Read-only pages have no settings draft to protect.
 export default function ServiceToolbar() {
+  useLocale();
   const [available, setAvailable] = useState(false);
   const [config, setConfig] = useState<Config>();
   const [status, setStatus] = useState<Status>();
@@ -105,8 +107,10 @@ export default function ServiceToolbar() {
         providerLocked={!config || !cfg || status?.pending}
         providerHelp={
           status?.pending
-            ? "配置待应用，请先重启代理再切换。"
-            : "切换立即保存并生效，新请求使用所选 Provider。"
+            ? t("Configuration pending. Restart the proxy before switching.")
+            : t(
+                "The selection is saved immediately. New requests use the selected provider.",
+              )
         }
         canRestart={status?.state === "running"}
         pending={status?.pending}
@@ -121,7 +125,7 @@ export default function ServiceToolbar() {
               version: config.version,
             });
             setConfig(await request<Config>("/api/config"));
-            return "账号已切换，新请求立即生效。";
+            return t("Account switched. New requests use it immediately.");
           });
         }}
         onProviderChange={(provider) => {
@@ -134,8 +138,8 @@ export default function ServiceToolbar() {
               }),
             );
             return provider
-              ? `已切换到 ${provider}。`
-              : "已停用 Provider，新请求将返回 503。";
+              ? t("Switched to {0}.", [provider])
+              : t("Provider disabled. New requests will return 503.");
           });
         }}
         onRestart={() =>
@@ -150,7 +154,7 @@ export default function ServiceToolbar() {
               );
               setRestarting(false);
             }
-            return "服务已重启，已应用当前保存的配置。";
+            return t("Service restarted with the saved configuration.");
           })
         }
       />
@@ -159,7 +163,7 @@ export default function ServiceToolbar() {
           className="topbar-feedback"
           role={error || offline ? "alert" : "status"}
         >
-          {error || (offline ? "管理服务离线" : notice)}
+          {error || (offline ? t("Management service offline") : notice)}
         </div>
       )}
     </>

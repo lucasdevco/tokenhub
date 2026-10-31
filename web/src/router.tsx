@@ -1,3 +1,4 @@
+import { t, useLocale } from "./i18n";
 import {
   createRootRoute,
   createRoute,
@@ -13,10 +14,15 @@ import Logs from "./logs/logs";
 import RequestExamples from "./examples/request-examples";
 import { settingsItems } from "./sidebar";
 
+function NotFound() {
+  useLocale();
+  return <p>{t("Page not found.")}</p>;
+}
+
 const rootRoute = createRootRoute({
   component: Outlet,
   validateSearch: (search: Record<string, unknown>) => search,
-  notFoundComponent: () => <p>页面不存在。</p>,
+  notFoundComponent: NotFound,
 });
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -29,6 +35,7 @@ const logsRoute = createRoute({
   component: Logs,
 });
 function SettingsEntry() {
+  useLocale();
   const providersPage = useLocation({
     select: (location) => location.pathname === "/settings/providers",
   });

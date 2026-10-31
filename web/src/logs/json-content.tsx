@@ -1,8 +1,10 @@
+import { t, useLocale } from "../i18n";
 import { Button } from "../components/ui/button";
 import { useMemo, useState } from "react";
 import { jsonRows, type Expansion } from "./json-tree";
 
 function JsonTree({ value }: { value: unknown }) {
+  useLocale();
   const [mode, setMode] = useState<Expansion>("default");
   const [overrides, setOverrides] = useState(new Map<string, boolean>());
   const [limit, setLimit] = useState(500);
@@ -22,10 +24,10 @@ function JsonTree({ value }: { value: unknown }) {
         <span>JSON</span>
         <div>
           <Button variant="outline" size="sm" onClick={() => expand("all")}>
-            全部展开
+            {t("Expand all")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => expand("none")}>
-            全部收起
+            {t("Collapse all")}
           </Button>
           <Button
             variant="outline"
@@ -35,14 +37,14 @@ function JsonTree({ value }: { value: unknown }) {
                 await navigator.clipboard.writeText(
                   JSON.stringify(value, null, 2),
                 );
-                setCopyStatus("已复制");
+                setCopyStatus(t("Copied"));
                 setTimeout(() => setCopyStatus(""), 2000);
               } catch {
-                setCopyStatus("复制失败，请重试");
+                setCopyStatus(t("Could not copy. Please try again."));
               }
             }}
           >
-            {copyStatus || "复制 JSON"}
+            {copyStatus || t("Copy JSON")}
           </Button>
         </div>
       </div>
@@ -63,7 +65,9 @@ function JsonTree({ value }: { value: unknown }) {
                   className="json-toggle"
                   aria-expanded={row.open}
                   aria-label={
-                    (row.open ? "收起" : "展开") + " " + (row.key || "JSON")
+                    (row.open ? t("Collapse") : t("Expand")) +
+                    " " +
+                    (row.key || "JSON")
                   }
                   onClick={() => {
                     const next = new Map(overrides);
@@ -87,7 +91,7 @@ function JsonTree({ value }: { value: unknown }) {
                     ? bracket[1]
                     : row.open && row.count
                       ? bracket[0]
-                      : `${bracket[0]} ${row.count} ${Array.isArray(row.value) ? "项" : "个字段"} ${bracket[1]}`}
+                      : `${bracket[0]} ${row.count} ${Array.isArray(row.value) ? t("items") : t("fields")} ${bracket[1]}`}
                 </span>
               ) : (
                 <JsonValue value={row.value} />
@@ -103,7 +107,7 @@ function JsonTree({ value }: { value: unknown }) {
           className="json-more"
           onClick={() => setLimit((value) => value + 500)}
         >
-          继续显示 500 行
+          {t("Show 500 more rows")}
         </Button>
       )}
     </div>
@@ -111,6 +115,7 @@ function JsonTree({ value }: { value: unknown }) {
 }
 
 function JsonValue({ value }: { value: unknown }) {
+  useLocale();
   const [expanded, setExpanded] = useState(false);
   const text = JSON.stringify(value) ?? "null";
   const long = text.length > 240;
@@ -127,7 +132,7 @@ function JsonValue({ value }: { value: unknown }) {
           aria-expanded={expanded}
           onClick={() => setExpanded((value) => !value)}
         >
-          {expanded ? "收起" : "展开完整内容"}
+          {expanded ? t("Collapse") : t("Expand full content")}
         </Button>
       )}
     </span>
@@ -135,6 +140,7 @@ function JsonValue({ value }: { value: unknown }) {
 }
 
 export default function JsonContent({ text }: { text: string }) {
+  useLocale();
   const parsed = useMemo(() => {
     try {
       return { valid: true, value: JSON.parse(text) };

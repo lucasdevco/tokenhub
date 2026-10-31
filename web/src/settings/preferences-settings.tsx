@@ -1,9 +1,14 @@
+import { getLocale, t, useLocale, type Locale } from "../i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { request as api } from "./settings-api";
 import { Field, Toggle } from "./settings-controls";
 
-export type Preferences = { auto_start: boolean; open_at_login: boolean };
+export type Preferences = {
+  locale?: Locale;
+  auto_start: boolean;
+  open_at_login: boolean;
+};
 type Props = {
   prefs?: Preferences;
   setPrefs: (preferences: Preferences) => void;
@@ -31,52 +36,65 @@ export default function PreferencesSettings({
   onOpenYaml,
   perform,
 }: Props) {
+  useLocale();
   return (
     <section>
-      <h1>客户端偏好</h1>
-      <p className="intro">偏好单独保存，不需要重启代理。</p>
+      <h1>{t("App preferences")}</h1>
+      <p className="intro">
+        {t(
+          "Preferences are saved separately and do not require a proxy restart.",
+        )}
+      </p>
       {prefs && (
         <>
-          <Field label="自动启动服务">
+          <Field label={t("Start service automatically")}>
             <Toggle
-              label="打开客户端时启动代理"
+              label={t("Start the proxy when the app opens")}
               disabled={locked}
               value={prefs.auto_start}
               onChange={(value) =>
                 perform(async () => {
-                  const next = { ...prefs, auto_start: value };
+                  const next = {
+                    ...prefs,
+                    locale: getLocale(),
+                    auto_start: value,
+                  };
                   await api("/api/preferences", next);
                   setPrefs(next);
-                  setNotice("偏好已保存。");
+                  setNotice(t("Preferences saved."));
                 })
               }
             />
           </Field>
           <Field
-            label="登录时启动"
+            label={t("Open at login")}
             help={
               loginSupported
-                ? "需要安装打包后的 macOS 应用。"
-                : "此选项需在 macOS 菜单栏客户端中使用。"
+                ? t("Requires the packaged macOS app to be installed.")
+                : t("Available in the macOS menu bar client.")
             }
           >
             <Toggle
-              label="登录 macOS 时打开 TokenHub"
+              label={t("Open TokenHub when you log in to macOS")}
               disabled={locked || !loginSupported}
               value={prefs.open_at_login}
               onChange={(value) =>
                 perform(async () => {
-                  const next = { ...prefs, open_at_login: value };
+                  const next = {
+                    ...prefs,
+                    locale: getLocale(),
+                    open_at_login: value,
+                  };
                   await api("/api/preferences", next);
                   setPrefs(next);
-                  setNotice("登录启动设置已更新。");
+                  setNotice(t("Login settings updated."));
                 })
               }
             />
           </Field>
         </>
       )}
-      <h2>配置文件</h2>
+      <h2>{t("Configuration file")}</h2>
       <code className="config-path">{filename}</code>
       <Button
         variant="outline"
@@ -84,7 +102,9 @@ export default function PreferencesSettings({
         className="open-config-directory"
         disabled={locked || !finderSupported}
         title={
-          finderSupported ? "打开配置文件所在目录" : "需要 macOS 桌面客户端"
+          finderSupported
+            ? t("Open the configuration directory")
+            : t("Requires the macOS desktop client")
         }
         onClick={() =>
           perform(async () => {
@@ -94,29 +114,32 @@ export default function PreferencesSettings({
       >
         Open in Finder
       </Button>
-      <h2>导入已有配置</h2>
+      <h2>{t("Import configuration")}</h2>
       <p className="hint">
-        导入只替换当前草稿，保存前会校验。相对路径按当前配置目录解析。
+        {t(
+          "Import replaces only the current draft. It is validated before saving. Relative paths use the current configuration directory.",
+        )}
       </p>
       <Input
         type="file"
-        aria-label="导入 YAML 配置"
+        aria-label={t("Import YAML configuration")}
         accept=".yaml,.yml"
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
           if (file.size > 2 << 20) {
-            setError("配置文件不能超过 2 MiB。");
+            setError(t("The configuration file must not exceed 2 MiB."));
             return;
           }
           setDraft(await file.text());
           onOpenYaml();
         }}
       />
-      <h2>服务生命周期</h2>
+      <h2>{t("Service lifecycle")}</h2>
       <p className="hint">
-        关闭浏览器不停止服务。停止代理后仍可查看历史日志；退出 TokenHub
-        后，本机管理网页离线。
+        {t(
+          "Closing the browser keeps the service running. You can view historical logs after stopping the proxy. Quitting TokenHub takes the local management interface offline.",
+        )}
       </p>
     </section>
   );

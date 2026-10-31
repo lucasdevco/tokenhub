@@ -1,3 +1,4 @@
+import { getLocale, t, useLocale } from "../i18n";
 import ServiceToolbar from "../service-toolbar";
 import { SegmentedControl } from "../components/ui/segmented-control";
 import { Button } from "../components/ui/button";
@@ -34,31 +35,17 @@ import RequestChart from "./request-chart";
 import { callerLabel } from "./caller-label";
 
 const PAGE = 100;
-const columnHints: Record<string, string> = {
-  "输入 Token": "输入 Token 总数（包含上游报告的缓存读取和写入）；未报告时留空",
-  "输出 Token": "上游报告的输出 Token 数；未报告时留空",
-  费用: "尚未配置模型价格",
-  用量类型: "尚未定义用量分类",
-  "生成速度 (tokens/s)":
-    "输出 Token 数 ÷ 首个内容增量到生成结束的秒数；仅已完成的流式响应",
-  "路由耗时 (ms)":
-    "本地开始处理请求到发起上游 HTTP 请求的耗时，不含网络和上游等待",
-  "首 Token 耗时 (ms)":
-    "从请求开始到收到上游首个内容、思考或工具调用增量的耗时；压缩流无法可靠定位时留空",
-  "总耗时 (s)":
-    "从 TokenHub 收到请求到响应结束的总耗时，包含流式输出全过程；未结束时留空，异常结束时显示实际耗时",
-  结束原因: "上游的 finish_reason / stop_reason；Responses API 使用结束状态或 incomplete_details.reason",
-};
+
 const metric = (value: number | undefined, digits = 0) =>
   value === undefined || !Number.isFinite(value)
     ? "—"
-    : value.toLocaleString(undefined, { maximumFractionDigits: digits });
+    : value.toLocaleString(getLocale(), { maximumFractionDigits: digits });
 function destination(item: Transaction) {
   const target =
     item.metadata.target_url ||
     item.metadata.source_url ||
     item.metadata_files?.[0] ||
-    "未知请求";
+    t("Unknown request");
   try {
     const url = new URL(target);
     return { full: target, path: url.pathname + url.search, host: url.host };
@@ -66,12 +53,41 @@ function destination(item: Transaction) {
     return {
       full: target,
       path: target,
-      host: item.metadata.id || "元数据不可用",
+      host: item.metadata.id || t("Metadata unavailable"),
     };
   }
 }
 
 export default function Logs() {
+  const locale = useLocale();
+  useEffect(() => {
+    document.title = t("Request logs · TokenHub");
+  }, [locale]);
+  const columnHints: Record<string, string> = {
+    [t("Input tokens")]: t(
+      "Total input tokens, including cache reads and writes reported by the upstream. Blank when unreported.",
+    ),
+    [t("Output tokens")]: t(
+      "Output tokens reported by the upstream. Blank when unreported.",
+    ),
+    [t("Cost")]: t("Model pricing is not configured"),
+    [t("Usage type")]: t("Usage categories are not defined"),
+    [t("Generation speed (tokens/s)")]: t(
+      "Output tokens divided by seconds from the first content delta to generation end. Completed streaming responses only.",
+    ),
+    [t("Routing time (ms)")]: t(
+      "Time from local request handling to the upstream HTTP request, excluding network and upstream wait time.",
+    ),
+    [t("Time to first token (ms)")]: t(
+      "Time from request start to the first upstream content, reasoning, or tool call delta. Blank when compressed streams prevent reliable measurement.",
+    ),
+    [t("Total time (s)")]: t(
+      "Time from request receipt to response completion, including streaming. Blank while pending. Shows actual duration for interrupted requests.",
+    ),
+    [t("Finish reason")]: t(
+      "Upstream finish_reason / stop_reason. Responses API uses the final status or incomplete_details.reason.",
+    ),
+  };
   const [mode, setMode] = useState<"requests" | "files">("requests");
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -120,7 +136,6 @@ export default function Logs() {
     setDetailError("");
   }
   useEffect(() => {
-    document.title = "请求日志 · TokenHub";
     let active = true;
     const controller = new AbortController();
     get<{ settings: boolean }>("/api/capabilities", controller.signal)
@@ -237,7 +252,11 @@ export default function Logs() {
         </Link>
         <span className={`status ${online ? "running" : "stopped"}`}>
           <i />
-          {paused ? "列表已暂停" : online ? "实时更新" : "正在重连"}
+          {paused
+            ? t("List paused")
+            : online
+              ? t("Live updates")
+              : t("Reconnecting")}
         </span>
         <ServiceToolbar />
       </header>
@@ -246,13 +265,20 @@ export default function Logs() {
         <main className="logs-main">
           <div className="logs-heading">
             <div>
-              <h1>请求日志</h1>
+              <h1>{t("Request logs")}</h1>
             </div>
             {requestPage && (
               <div className="capture-counts">
-                <span>{requestPage.all.toLocaleString()} 条记录</span>
-                <span>{requestPage.unfinished.toLocaleString()} 未完成</span>
-                <span>{requestPage.errors.toLocaleString()} 异常</span>
+                <span>
+                  {requestPage.all.toLocaleString(getLocale())} {t("records")}
+                </span>
+                <span>
+                  {requestPage.unfinished.toLocaleString(getLocale())}{" "}
+                  {t("unfinished")}
+                </span>
+                <span>
+                  {requestPage.errors.toLocaleString(getLocale())} {t("errors")}
+                </span>
               </div>
             )}
           </div>
@@ -271,14 +297,17 @@ export default function Logs() {
             />
           )}
           <div className="logs-workspace">
-            <section className="capture-library" aria-label="捕获记录">
+            <section
+              className="capture-library"
+              aria-label={t("Capture records")}
+            >
               <div className="logs-toolbar">
                 <SegmentedControl
-                  aria-label="记录类型"
+                  aria-label={t("Record type")}
                   value={mode}
                   options={[
-                    { value: "requests", label: "请求" },
-                    { value: "files", label: "所有文件" },
+                    { value: "requests", label: t("Request") },
+                    { value: "files", label: t("All files") },
                   ]}
                   onValueChange={(value) =>
                     changeMode(value as "requests" | "files")
@@ -289,30 +318,30 @@ export default function Logs() {
                   size="sm"
                   onClick={() => setRevision((value) => value + 1)}
                 >
-                  刷新
+                  {t("Refresh")}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setPaused((value) => !value)}
                 >
-                  {paused ? "恢复更新" : "暂停更新"}
+                  {paused ? t("Resume updates") : t("Pause updates")}
                 </Button>
               </div>
               <div className="capture-filters">
                 <Input
                   type="search"
-                  aria-label="搜索捕获记录"
+                  aria-label={t("Search captures")}
                   placeholder={
                     mode === "requests"
-                      ? "搜索 URL、ID、方法、状态…"
-                      : "搜索文件名或归档…"
+                      ? t("Search URL, ID, method, status…")
+                      : t("Search file name or archive…")
                   }
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
                 <NativeSelect
-                  aria-label="捕获状态"
+                  aria-label={t("Capture status")}
                   value={filter}
                   disabled={mode === "files"}
                   onChange={(event) => {
@@ -320,11 +349,11 @@ export default function Logs() {
                     setCursors([""]);
                   }}
                 >
-                  <option value="">全部状态</option>
-                  <option value="unfinished">未完成</option>
-                  <option value="completed">已完成</option>
-                  <option value="error">请求异常</option>
-                  <option value="capture_error">采集异常</option>
+                  <option value="">{t("All statuses")}</option>
+                  <option value="unfinished">{t("unfinished")}</option>
+                  <option value="completed">{t("Completed")}</option>
+                  <option value="error">{t("Request error")}</option>
+                  <option value="capture_error">{t("Capture error")}</option>
                 </NativeSelect>
               </div>
               <div className="capture-table" aria-busy={loading}>
@@ -333,23 +362,23 @@ export default function Logs() {
                     <TableRow>
                       {(mode === "requests"
                         ? [
-                            "时间",
-                            "请求",
-                            "状态",
-                            "模型",
-                            "服务商",
-                            "调用方",
-                            "输入 Token",
-                            "输出 Token",
-                            "总耗时 (s)",
-                            "生成速度 (tokens/s)",
-                            "路由耗时 (ms)",
-                            "首 Token 耗时 (ms)",
-                            "费用",
-                            "用量类型",
-                            "结束原因",
+                            t("Time"),
+                            t("Request"),
+                            t("Status"),
+                            t("Model"),
+                            t("Provider"),
+                            t("Caller"),
+                            t("Input tokens"),
+                            t("Output tokens"),
+                            t("Total time (s)"),
+                            t("Generation speed (tokens/s)"),
+                            t("Routing time (ms)"),
+                            t("Time to first token (ms)"),
+                            t("Cost"),
+                            t("Usage type"),
+                            t("Finish reason"),
                           ]
-                        : ["大小", "文件", "下载"]
+                        : [t("Size"), t("File"), t("Download")]
                       ).map((title) => (
                         <TableHead key={title} title={columnHints[title]}>
                           {title}
@@ -509,7 +538,7 @@ export default function Logs() {
                                 href={downloadURL(item.name)}
                                 download={item.name}
                               >
-                                下载
+                                {t("Download")}
                               </a>
                             </TableCell>
                           </TableRow>
@@ -518,15 +547,17 @@ export default function Logs() {
                 </Table>
                 {!total && (
                   <div className="logs-empty">
-                    {loading ? "正在加载记录…" : "没有匹配的捕获记录。"}
+                    {loading
+                      ? t("Loading records…")
+                      : t("No matching capture records.")}
                   </div>
                 )}
               </div>
               <div className="logs-pagination">
                 <span>
                   {page?.items.length
-                    ? `${offset + 1}–${offset + page.items.length} / ${total.toLocaleString()}`
-                    : "0 条记录"}
+                    ? `${offset + 1}–${offset + page.items.length} / ${total.toLocaleString(getLocale())}`
+                    : t("0 records")}
                 </span>
                 <div>
                   <Button
@@ -535,7 +566,7 @@ export default function Logs() {
                     disabled={offset === 0 || loading}
                     onClick={() => setCursors((value) => value.slice(0, -1))}
                   >
-                    上一页
+                    {t("Previous")}
                   </Button>
                   <Button
                     variant="outline"
@@ -546,17 +577,21 @@ export default function Logs() {
                         setCursors((value) => [...value, page.next_cursor!]);
                     }}
                   >
-                    下一页
+                    {t("Next")}
                   </Button>
                 </div>
               </div>
               {page?.indexing && (
                 <p className="logs-footnote" role="status">
-                  正在后台建立历史索引，当前展示已索引记录。
+                  {t(
+                    "Building the history index in the background. Showing indexed records.",
+                  )}
                 </p>
               )}
               <p className="logs-footnote">
-                只读查看。未完成记录可能来自实时请求或被中断的捕获。
+                {t(
+                  "Read-only view. Unfinished records may be active requests or interrupted captures.",
+                )}
               </p>
             </section>
           </div>

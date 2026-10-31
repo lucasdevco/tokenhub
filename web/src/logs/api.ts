@@ -1,3 +1,4 @@
+import { getLocale, t } from "../i18n";
 export type Metadata = {
   id?: string;
   provider?: string;
@@ -90,7 +91,7 @@ export const timestamp = (value: string) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "—"
-    : date.toLocaleString(undefined, {
+    : date.toLocaleString(getLocale(), {
         month: "short",
         day: "numeric",
         hour: "2-digit",
@@ -99,13 +100,10 @@ export const timestamp = (value: string) => {
       });
 };
 
-const relativeFormatter = new Intl.RelativeTimeFormat("zh-CN", {
-  numeric: "always",
-});
 export function relativeTime(value: string, now = Date.now()) {
   const seconds = (new Date(value).getTime() - now) / 1000;
   if (!Number.isFinite(seconds)) return "—";
-  if (Math.abs(seconds) < 10) return "刚刚";
+  if (Math.abs(seconds) < 10) return t("Just now");
   for (const [unit, size] of [
     ["day", 86400],
     ["hour", 3600],
@@ -113,7 +111,9 @@ export function relativeTime(value: string, now = Date.now()) {
     ["second", 1],
   ] as const) {
     if (Math.abs(seconds) >= size)
-      return relativeFormatter.format(Math.trunc(seconds / size), unit);
+      return new Intl.RelativeTimeFormat(getLocale(), {
+        numeric: "always",
+      }).format(Math.trunc(seconds / size), unit);
   }
-  return "刚刚";
+  return t("Just now");
 }

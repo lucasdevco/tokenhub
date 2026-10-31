@@ -95,37 +95,37 @@ func (a *app) view(c *ui.Context) {
 			}
 			if a.status.Pending {
 				ui.Row(c).Height(26).Gap(6).Children(func() {
-					ui.Text(c, "配置待应用").FontSize(11).TextColor(theme.TextMuted).Grow(1)
-					ui.Button(c.Key("apply"), "重启并应用").FontSize(11).Disabled(a.locked()).OnClick(func() { a.action("restart", a.manager.Restart) })
+					ui.Text(c, tr("Configuration pending")).FontSize(11).TextColor(theme.TextMuted).Grow(1)
+					ui.Button(c.Key("apply"), tr("Restart and apply")).FontSize(11).Disabled(a.locked()).OnClick(func() { a.action("restart", a.manager.Restart) })
 				})
 			}
 		})
 
-		menuRow(c, "logs", logsIcon, "请求日志", "浏览器", func() { a.open("/logs/") })
+		menuRow(c, "logs", logsIcon, tr("Request logs"), tr("Browser"), func() { a.open("/logs/") })
 		menuRow(c, "update", restartIcon, a.update.label(), "v"+mygo.App.Version(), a.openUpdate)
 		ui.Column(c).Gap(2).Shrink(0).Children(func() {
-			ui.Text(c, "诊断工具").FontSize(10).TextColor(theme.TextMuted).Padding(0, 8, 3, 8)
-			menuRow(c, "program-log", programIcon, "程序运行日志", "文件", a.openProgramLog)
-			menuRow(c, "app-directory", folderIcon, "打开程序主目录", "Finder", a.openAppDirectory)
+			ui.Text(c, tr("Diagnostics")).FontSize(10).TextColor(theme.TextMuted).Padding(0, 8, 3, 8)
+			menuRow(c, "program-log", programIcon, tr("Application logs"), tr("File"), a.openProgramLog)
+			menuRow(c, "app-directory", folderIcon, tr("Open application directory"), "Finder", a.openAppDirectory)
 		})
 		ui.Spacer(c)
 		ui.Divider(c)
 		ui.Row(c).Height(24).Shrink(0).Gap(8).Children(func() {
-			settings := ui.ButtonBase(c.Key("settings")).Label("设置").Tooltip("在浏览器中打开设置").Padding(6).Gap(6).Radius(6)
+			settings := ui.ButtonBase(c.Key("settings")).Label(tr("Settings")).Tooltip(tr("Open settings in browser")).Padding(6).Gap(6).Radius(6)
 			if settings.Hovered() {
 				settings.Background(theme.SurfaceHover)
 			}
 			settings.Children(func() {
 				ui.Icon(c, settingsIcon).Size(15, 15).TextColor(theme.TextMuted)
-				ui.Text(c, "设置").FontSize(11).TextColor(theme.TextMuted)
+				ui.Text(c, tr("Settings")).FontSize(11).TextColor(theme.TextMuted)
 			}).OnClick(func() { a.open("/settings") })
 			ui.Spacer(c)
 			ui.Text(c, "TokenHub").FontSize(10).TextColor(theme.TextMuted)
-			button := ui.ButtonBase(c.Key("quit")).Label("退出 TokenHub").Padding(6).Radius(6)
+			button := ui.ButtonBase(c.Key("quit")).Label(tr("Quit TokenHub")).Padding(6).Radius(6)
 			if button.Hovered() {
 				button.Background(theme.SurfaceHover)
 			}
-			button.Children(func() { ui.Text(c, "退出").FontSize(11).TextColor(theme.TextMuted) })
+			button.Children(func() { ui.Text(c, tr("Quit")).FontSize(11).TextColor(theme.TextMuted) })
 			button.OnClick(mygo.App.Quit)
 		})
 	})
@@ -136,17 +136,17 @@ func (a *app) addressRow(c *ui.Context) {
 	row := ui.Row(c).Height(44).Gap(10).Shrink(0)
 	row.Children(func() {
 		ui.Column(c).Grow(1).Gap(4).Children(func() {
-			ui.Text(c, "代理地址").FontSize(10).TextColor(theme.TextMuted)
+			ui.Text(c, tr("Proxy address")).FontSize(10).TextColor(theme.TextMuted)
 			if a.status.Address != "" && a.status.State == "running" {
 				ui.Text(c, a.status.Address).Font("Menlo").FontSize(12).FontWeight(500).Selectable().MaxLines(1).Ellipsis("…")
 			} else {
-				ui.Text(c, "启动后显示地址").FontSize(12).TextColor(theme.TextMuted)
+				ui.Text(c, tr("Address available after starting")).FontSize(12).TextColor(theme.TextMuted)
 			}
 		})
 		copied := a.copiedAddress == a.status.Address && time.Now().Before(a.copiedUntil)
-		label := "复制地址"
+		label := tr("Copy address")
 		if copied {
-			label = "已复制"
+			label = tr("Copied")
 		}
 		button := ui.ButtonBase(c.Key("copy")).Label(label).Padding(8).Radius(6).Disabled(a.status.State != "running" || a.status.Address == "")
 		if button.Hovered() {
@@ -154,7 +154,7 @@ func (a *app) addressRow(c *ui.Context) {
 		}
 		button.Children(func() {
 			if copied {
-				ui.Text(c, "已复制").FontSize(10).TextColor(theme.TextMuted)
+				ui.Text(c, tr("Copied")).FontSize(10).TextColor(theme.TextMuted)
 			} else {
 				ui.Icon(c, copyIcon).Size(16, 16).TextColor(theme.TextMuted)
 			}
@@ -183,14 +183,14 @@ func (a *app) serviceControls(c *ui.Context) {
 		ui.Box(c).Size(6, 6).Radius(3).Background(color)
 		label := stateLabel(a.status.State)
 		if a.actionName == "restart" {
-			label = "重启中…"
+			label = tr("Restarting…")
 		}
 		ui.Text(c, label).FontSize(12).FontWeight(500).Grow(1)
 		if a.status.State == "running" || a.actionName == "restart" {
-			panelAction(c, "restart", "重启服务", restartIcon, a.locked(), func() { a.action("restart", a.manager.Restart) })
-			panelAction(c, "stop", "停止服务", powerIcon, a.locked(), func() { a.action("stop", a.manager.Stop) })
+			panelAction(c, "restart", tr("Restart service"), restartIcon, a.locked(), func() { a.action("restart", a.manager.Restart) })
+			panelAction(c, "stop", tr("Stop service"), powerIcon, a.locked(), func() { a.action("stop", a.manager.Stop) })
 		} else {
-			ui.Button(c.Key("start"), "启动服务").FontSize(12).Disabled(a.locked()).OnClick(func() { a.action("start", a.manager.Start) })
+			ui.Button(c.Key("start"), tr("Start service")).FontSize(12).Disabled(a.locked()).OnClick(func() { a.action("start", a.manager.Start) })
 		}
 	})
 }
@@ -209,7 +209,7 @@ func (a *app) loadSelections() {
 	a.selectionError = ""
 	if err != nil {
 		a.catalog = service.ProviderCatalog{}
-		a.selectionError = "无法读取服务商和账号，请前往设置检查"
+		a.selectionError = tr("Could not read providers and accounts. Check your settings.")
 		return
 	}
 	a.catalog = catalog
@@ -239,11 +239,11 @@ func (a *app) selectionRow(c *ui.Context) {
 	ui.Row(c).Height(32).Gap(8).Shrink(0).Children(func() {
 		providerName := current.Name
 		if providerName == "" {
-			providerName = "未选择"
+			providerName = tr("None selected")
 		}
-		selectionButton(c, "provider", "服务商", providerName, locked, func(m *ui.Menu) {
+		selectionButton(c, "provider", tr("Provider"), providerName, locked, func(m *ui.Menu) {
 			if len(a.catalog.Services) == 0 {
-				m.Item("尚未添加服务商").Disabled(true)
+				m.Item(tr("No providers configured")).Disabled(true)
 			}
 			for _, provider := range a.catalog.Services {
 				if m.Item(provider.Name).Checked(provider.ID == a.catalog.Active).Chosen() && provider.ID != a.catalog.Active {
@@ -251,24 +251,24 @@ func (a *app) selectionRow(c *ui.Context) {
 				}
 			}
 			m.Separator()
-			if m.Item("管理服务商…").Chosen() {
+			if m.Item(tr("Manage providers…")).Chosen() {
 				a.open("/settings/providers")
 			}
 		})
-		accountName := "未选择"
+		accountName := tr("None selected")
 		if current.ID == "" {
-			accountName = "先选服务商"
+			accountName = tr("Select a provider first")
 		} else if len(current.Accounts) == 0 {
-			accountName = "无需账号"
+			accountName = tr("No account required")
 		}
 		for _, account := range current.Accounts {
 			if account.ID == current.Active {
 				accountName = account.Name
 			}
 		}
-		selectionButton(c, "account", "账号", accountName, locked || current.ID == "", func(m *ui.Menu) {
+		selectionButton(c, "account", tr("Account"), accountName, locked || current.ID == "", func(m *ui.Menu) {
 			if len(current.Accounts) == 0 {
-				m.Item("此服务商未配置账号").Disabled(true)
+				m.Item(tr("No accounts configured for this provider")).Disabled(true)
 			}
 			for _, account := range current.Accounts {
 				if m.Item(account.Name).Checked(account.ID == current.Active).Chosen() && account.ID != current.Active {
@@ -276,7 +276,7 @@ func (a *app) selectionRow(c *ui.Context) {
 				}
 			}
 			m.Separator()
-			if m.Item("管理账号…").Chosen() {
+			if m.Item(tr("Manage accounts…")).Chosen() {
 				a.open("/settings/providers")
 			}
 		})
@@ -285,12 +285,12 @@ func (a *app) selectionRow(c *ui.Context) {
 
 func selectionButton(c *ui.Context, key, label, value string, disabled bool, menu func(*ui.Menu)) {
 	theme := c.Theme()
-	button := ui.ButtonBase(c.Key(key)).Label(label + "：" + value).Tooltip(label + "：" + value).Grow(1).Basis(0).Height(30).Padding(6).Gap(4).Radius(6).Disabled(disabled)
+	button := ui.ButtonBase(c.Key(key)).Label(label + tr(": ") + value).Tooltip(label + tr(": ") + value).Grow(1).Basis(0).Height(30).Padding(6).Gap(4).Radius(6).Disabled(disabled)
 	if button.Hovered() {
 		button.Background(theme.SurfaceHover)
 	}
 	button.Children(func() {
-		ui.Text(c, label+"：").FontSize(11).TextColor(theme.TextMuted)
+		ui.Text(c, label+tr(": ")).FontSize(11).TextColor(theme.TextMuted)
 		ui.Text(c, value).FontSize(12).FontWeight(500).Grow(1).MaxLines(1).Ellipsis("…")
 		ui.Icon(c, chevronIcon).Size(12, 12).TextColor(theme.TextMuted)
 	})
@@ -335,7 +335,7 @@ func (a *app) openAppDirectory() {
 		if err := openDirectory(filepath.Dir(a.manager.Filename)); err != nil {
 			_, _ = mygo.Dialog.Message(mygo.MessageOptions{
 				Type:    mygo.MessageError,
-				Title:   "无法打开程序主目录",
+				Title:   tr("Could not open application directory"),
 				Message: err.Error(),
 			})
 		}
@@ -349,10 +349,10 @@ func (a *app) openProgramLog() {
 	go func() {
 		filename := filepath.Join(filepath.Dir(a.manager.Filename), "app.log")
 		if err := mygo.Shell.OpenPath(filename); err != nil {
-			log.Printf("无法打开程序日志: %v", err)
+			log.Printf(tr("Could not open application log: %v"), err)
 			_, _ = mygo.Dialog.Message(mygo.MessageOptions{
 				Type:    mygo.MessageError,
-				Title:   "无法打开程序日志",
+				Title:   tr("Could not open application log"),
 				Message: err.Error(),
 			})
 		}

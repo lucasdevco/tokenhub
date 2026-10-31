@@ -13,6 +13,8 @@ import (
 )
 
 func TestPanelMenusAndStates(t *testing.T) {
+	language.Store("zh-CN")
+	t.Cleanup(func() { language.Store("en") })
 	a := &app{
 		status: service.Status{State: "running", Address: "http://127.0.0.1:5601", ActiveProvider: "OpenRouter"},
 		catalog: service.ProviderCatalog{Active: "router", Services: []service.ProviderView{
@@ -137,6 +139,8 @@ func TestPanelMenusAndStates(t *testing.T) {
 }
 
 func TestLoadPanelSelections(t *testing.T) {
+	language.Store("zh-CN")
+	t.Cleanup(func() { language.Store("en") })
 	manager, err := service.NewManager(filepath.Join(t.TempDir(), "config.yaml"))
 	if err != nil {
 		t.Fatal(err)

@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "test": "vitest run",
+    "build": "pnpm i18n:check && tsc --noEmit && vite build",
+    "test": "pnpm i18n:check && vitest run",
     "test:watch": "vitest",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "i18n:check": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",

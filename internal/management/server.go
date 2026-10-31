@@ -17,13 +17,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lucasdevco/tokenhub/internal/i18n"
 	"github.com/lucasdevco/tokenhub/internal/service"
 	"github.com/lucasdevco/tokenhub/web"
 )
 
 type Preferences struct {
-	AutoStart   bool `json:"auto_start"`
-	OpenAtLogin bool `json:"open_at_login"`
+	Locale      string `json:"locale,omitempty"`
+	AutoStart   bool   `json:"auto_start"`
+	OpenAtLogin bool   `json:"open_at_login"`
 }
 
 type Options struct {
@@ -281,6 +283,10 @@ func (s *Server) getPreferences(w http.ResponseWriter, r *http.Request) {
 func (s *Server) savePreferences(w http.ResponseWriter, r *http.Request) {
 	var prefs Preferences
 	if !decode(w, r, &prefs) {
+		return
+	}
+	if prefs.Locale != "" && !i18n.Supported(prefs.Locale) {
+		fail(w, 400, fmt.Errorf("unsupported locale: %s", prefs.Locale))
 		return
 	}
 	s.mu.Lock()

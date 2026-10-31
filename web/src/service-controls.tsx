@@ -1,3 +1,4 @@
+import { t, useLocale } from "./i18n";
 import { KeyRound, RotateCw, Waypoints } from "lucide-react";
 import { NativeSelect } from "./components/ui/native-select";
 import { Button } from "./components/ui/button";
@@ -37,22 +38,26 @@ export function ServiceControls({
   onProviderChange,
   onRestart,
 }: Props) {
+  useLocale();
   return (
-    <div className="topbar-controls" aria-label="运行配置">
+    <div className="topbar-controls" aria-label={t("Runtime configuration")}>
       <label className="topbar-switch" title={providerHelp}>
         <Waypoints aria-hidden="true" />
         <span className="topbar-control-label">Provider</span>
         <NativeSelect
-          aria-label="当前 Provider"
+          aria-label={t("Current provider")}
           title={providerHelp}
           size="sm"
           value={activeProvider}
           disabled={locked || switchingLocked || providerLocked}
           onChange={(event) => onProviderChange(event.target.value)}
         >
-          <option value="">未选择 Provider</option>
+          <option value="">{t("No provider selected")}</option>
           {activeProvider && !providers.includes(activeProvider) && (
-            <option value={activeProvider}>{activeProvider}（当前运行）</option>
+            <option value={activeProvider}>
+              {activeProvider}
+              {t(" (running)")}
+            </option>
           )}
           {providers.map((name) => (
             <option key={name} value={name}>
@@ -65,14 +70,14 @@ export function ServiceControls({
         className="topbar-switch"
         title={
           switchingLocked
-            ? "请先保存或放弃当前修改，再切换账号。"
-            : "切换账号，新请求立即生效"
+            ? t("Save or discard your changes before switching accounts.")
+            : t("Switch accounts. New requests use the selection immediately.")
         }
       >
         <KeyRound aria-hidden="true" />
-        <span className="topbar-control-label">账号</span>
+        <span className="topbar-control-label">{t("Account")}</span>
         <NativeSelect
-          aria-label="当前账号"
+          aria-label={t("Current account")}
           size="sm"
           value={activeAccount}
           disabled={
@@ -80,7 +85,7 @@ export function ServiceControls({
           }
           onChange={(event) => onAccountChange(event.target.value)}
         >
-          {!accounts.length && <option value="">无需密钥</option>}
+          {!accounts.length && <option value="">{t("No key required")}</option>}
           {accounts.map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}
@@ -93,13 +98,17 @@ export function ServiceControls({
         size="sm"
         disabled={locked || !canRestart}
         onClick={onRestart}
-        title={pending ? "重启并应用已保存的配置" : "重启服务"}
+        title={
+          pending
+            ? t("Restart and apply saved configuration")
+            : t("Restart service")
+        }
       >
         <RotateCw
           aria-hidden="true"
           className={restarting ? "restart-spinning" : ""}
         />
-        {restarting ? "重启中…" : "重启"}
+        {restarting ? t("Restarting…") : t("Restart")}
       </Button>
     </div>
   );

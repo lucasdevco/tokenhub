@@ -1,3 +1,5 @@
+import LanguageSelect from "../language-select";
+import { t, useLocale } from "../i18n";
 import ServiceToolbar from "../service-toolbar";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
@@ -54,7 +56,9 @@ export function buildCurl(
     stream,
   };
   return [
-    "# 在终端设置 TOKENHUB_API_KEY：使用 client_key 或上游 API Key",
+    t(
+      "# Set TOKENHUB_API_KEY in your terminal: use client_key or the upstream API key",
+    ),
     `curl${stream ? " --no-buffer" : ""} ${quote(requestURL(protocol, base))} \\`,
     "  -H 'Content-Type: application/json' \\",
     protocol === "claude"
@@ -67,17 +71,21 @@ export function buildCurl(
   ].join("\n");
 }
 export default function RequestExamples() {
+  const locale = useLocale();
+  useEffect(() => {
+    document.title = t("Request examples · TokenHub");
+  }, [locale]);
   const [protocol, setProtocol] = useState<Protocol>("chat");
   const [base, setBase] = useState(protocols.chat.base);
   const [model, setModel] = useState("YOUR_MODEL_ID");
-  const [prompt, setPrompt] = useState("你好，请简单介绍一下自己。");
+  const [prompt, setPrompt] = useState(
+    t("Hello, please briefly introduce yourself."),
+  );
   const [stream, setStream] = useState(false);
   const [notice, setNotice] = useState("");
   const [copyError, setCopyError] = useState("");
   const curl = buildCurl(protocol, base, model, prompt, stream);
-  useEffect(() => {
-    document.title = "请求示例 · TokenHub";
-  }, []);
+  useEffect(() => {}, []);
   useEffect(() => {
     setNotice("");
     setCopyError("");
@@ -94,24 +102,29 @@ export default function RequestExamples() {
           TokenHub
         </Link>
         <Link className="logs-link" to="/logs">
-          返回请求日志
+          {t("Back to request logs")}
         </Link>
+        <LanguageSelect />
         <ServiceToolbar />
       </header>
       <main className="request-examples">
-        <h1>请求示例</h1>
+        <h1>{t("Request examples")}</h1>
         <p className="intro">
-          选择协议并填写请求参数，复制 curl
-          到终端发送请求，再到请求日志查看结果。
+          {t(
+            "Choose a protocol and enter the request parameters. Copy the curl command to your terminal, then check the request logs for results.",
+          )}
         </p>
-        <section aria-label="请求参数" className="example-fields">
-          <Field label="协议">
+        <section
+          aria-label={t("Request parameters")}
+          className="example-fields"
+        >
+          <Field label={t("Protocol")}>
             <SegmentedControl
               options={Object.entries(protocols).map(([value, protocol]) => ({
                 value,
                 label: protocol.label,
               }))}
-              aria-label="协议"
+              aria-label={t("Protocol")}
               value={protocol}
               onValueChange={(value) => {
                 const next = value as Protocol;
@@ -122,8 +135,10 @@ export default function RequestExamples() {
             />
           </Field>
           <Field
-            label="API 基础地址"
-            help="填写代理监听地址与协议版本路径，例如 http://127.0.0.1:5601/v1。5173 是前端端口，不用于模型请求；无需添加 Provider 名称。"
+            label={t("API base URL")}
+            help={t(
+              "Enter the proxy address and protocol version path, e.g. http://127.0.0.1:5601/v1. Port 5173 is for the frontend, not model requests. Do not add a provider name.",
+            )}
           >
             <Input
               value={base}
@@ -132,8 +147,10 @@ export default function RequestExamples() {
             />
           </Field>
           <Field
-            label="模型"
-            help="填写目标服务支持的完整模型 ID，必要时包含供应商前缀。"
+            label={t("Model")}
+            help={t(
+              "Enter the full model ID supported by the target service, including the vendor prefix if required.",
+            )}
           >
             <Input
               value={model}
@@ -141,17 +158,17 @@ export default function RequestExamples() {
               spellCheck={false}
             />
           </Field>
-          <Field label="提示词">
+          <Field label={t("Prompt")}>
             <Textarea
               value={prompt}
               onChange={(event) => setPrompt(event.target.value)}
               rows={3}
             />
           </Field>
-          <Field label="响应方式" inputId="example-stream">
+          <Field label={t("Response mode")} inputId="example-stream">
             <Toggle
               id="example-stream"
-              label="流式响应（SSE）"
+              label={t("Streaming response (SSE)")}
               value={stream}
               onChange={setStream}
             />
@@ -168,29 +185,33 @@ export default function RequestExamples() {
               onClick={async () => {
                 try {
                   await navigator.clipboard.writeText(curl);
-                  setNotice("已复制");
+                  setNotice(t("Copied"));
                   setCopyError("");
                 } catch {
-                  setCopyError("复制失败，请选中下方代码手动复制。");
+                  setCopyError(
+                    t(
+                      "Could not copy. Select the code below and copy it manually.",
+                    ),
+                  );
                 }
               }}
             >
-              复制 curl
+              {t("Copy curl")}
             </Button>
           </div>
-          <pre tabIndex={0} aria-label="curl 请求代码">
+          <pre tabIndex={0} aria-label={t("curl command")}>
             <code>{curl}</code>
           </pre>
           <span role="status">{notice}</span>
           {copyError && <p role="alert">{copyError}</p>}
         </section>
         <p className="intro">
-          TokenHub 只转发请求，不转换协议。目标服务必须支持所选接口；配置
-          backend_key 后由代理注入上游密钥，配置 client_key 时需在终端设置
-          TOKENHUB_API_KEY；未配置密钥替换时填写上游 API Key。
+          {t(
+            "TokenHub forwards requests without converting protocols. The target service must support the selected endpoint. Set backend_key to inject an upstream key. When client_key is configured, set TOKENHUB_API_KEY in your terminal. Otherwise, use the upstream API key.",
+          )}
         </p>
         <a href={protocols[protocol].docs} target="_blank" rel="noreferrer">
-          查看 {protocols[protocol].label} 官方文档
+          {t("View {0} documentation", [protocols[protocol].label])}
         </a>
       </main>
     </div>

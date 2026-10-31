@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { parseDocument } from "yaml";
 
 export type Provider = {
@@ -36,7 +37,7 @@ export function readDraft(text: string) {
       config = document.toJS();
       if (!config || typeof config !== "object" || Array.isArray(config)) {
         config = null;
-        error = "配置根节点必须是 YAML 映射。";
+        error = t("The configuration root must be a YAML mapping.");
       }
     } catch (value) {
       error = value instanceof Error ? value.message : String(value);

@@ -1,3 +1,4 @@
+import { t, useLocale } from "../i18n";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import type { Configuration } from "./config";
@@ -19,16 +20,19 @@ export default function BasicSettings({
   finderSupported,
   perform,
 }: Props) {
+  useLocale();
   return (
     <section>
-      <h1>常用配置</h1>
+      <h1>{t("General settings")}</h1>
       <p className="intro">
-        配置代理监听、流量记录和出站连接。保存不会中断正在运行的代理。
+        {t(
+          "Configure the proxy listener, traffic recording, and outbound connections. Saving does not interrupt the running proxy.",
+        )}
       </p>
-      <h2>反向代理</h2>
-      <Field label="启用监听">
+      <h2>{t("Reverse proxy")}</h2>
+      <Field label={t("Listener")}>
         <Toggle
-          label="启用反向代理"
+          label={t("Enable reverse proxy")}
           value={!!config.server}
           onChange={(value) =>
             edit(
@@ -40,14 +44,14 @@ export default function BasicSettings({
       </Field>
       {config.server && (
         <>
-          <Field label="监听地址">
+          <Field label={t("Listen address")}>
             <Input
               value={config.server.host || ""}
               onChange={(e) => edit(["server", "host"], e.target.value)}
               placeholder="127.0.0.1"
             />
           </Field>
-          <Field label="监听端口">
+          <Field label={t("Listen port")}>
             <Input
               type="number"
               min="1"
@@ -58,18 +62,20 @@ export default function BasicSettings({
           </Field>
         </>
       )}
-      <h2>请求记录</h2>
-      <Field label="记录请求和响应">
+      <h2>{t("Request recording")}</h2>
+      <Field label={t("Record requests and responses")}>
         <Toggle
-          label="启用磁盘日志"
+          label={t("Enable disk logging")}
           value={!!config.logging?.enabled}
           onChange={(value) => edit(["logging", "enabled"], value)}
         />
       </Field>
       <Field
         inputId="logs-directory"
-        label="日志目录"
-        help="相对路径以配置文件所在目录为基准。"
+        label={t("Log directory")}
+        help={t(
+          "Relative paths are resolved from the configuration directory.",
+        )}
       >
         <div className="directory-field">
           <Input
@@ -86,8 +92,8 @@ export default function BasicSettings({
             disabled={locked || !finderSupported}
             title={
               finderSupported
-                ? "打开当前使用的日志目录"
-                : "需要 macOS 桌面客户端"
+                ? t("Open the active log directory")
+                : t("Requires the macOS desktop client")
             }
             onClick={() =>
               perform(async () => {
@@ -99,36 +105,43 @@ export default function BasicSettings({
           </Button>
         </div>
       </Field>
-      <Field label="控制台输出">
+      <Field label={t("Console output")}>
         <Toggle
-          label="输出到服务控制台"
+          label={t("Write to service console")}
           value={!!config.logging?.console}
           onChange={(value) => edit(["logging", "console"], value)}
         />
       </Field>
-      <h2>出站连接</h2>
-      <Field label="上游代理" help="留空时按下方选项决定是否使用代理环境变量。">
+      <h2>{t("Outbound connections")}</h2>
+      <Field
+        label={t("Upstream proxy")}
+        help={t(
+          "Leave blank to use the proxy environment variables if enabled below.",
+        )}
+      >
         <Input
           value={config.http_client?.proxy_url || ""}
           onChange={(e) => edit(["http_client", "proxy_url"], e.target.value)}
           placeholder="http://127.0.0.1:6152"
         />
       </Field>
-      <Field label="环境变量">
+      <Field label={t("Environment variables")}>
         <Toggle
-          label="继承 HTTP_PROXY / HTTPS_PROXY 等变量"
+          label={t("Inherit HTTP_PROXY / HTTPS_PROXY and related variables")}
           value={config.http_client?.proxy_from_environment !== false}
           onChange={(value) =>
             edit(["http_client", "proxy_from_environment"], value)
           }
         />
       </Field>
-      <h2>管理网页</h2>
-      <Field label="当前地址">
+      <h2>{t("Management interface")}</h2>
+      <Field label={t("Current URL")}>
         <code>{location.origin}</code>
       </Field>
       <p className="hint">
-        管理网页独立于代理运行。管理监听端口通过启动参数配置，不随代理重启而改变。
+        {t(
+          "The management interface runs independently of the proxy. Its listen port is set by startup arguments and does not change when the proxy restarts.",
+        )}
       </p>
     </section>
   );

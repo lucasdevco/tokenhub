@@ -1,3 +1,4 @@
+import { t, useLocale, type MessageKey } from "../i18n";
 import { useEffect, useRef, useState } from "react";
 import { CaptureDecoder, fromBase64, hex, pretty } from "./decoders";
 import { bytes, get, type RawPage } from "./api";
@@ -15,13 +16,17 @@ export function useCapture(
   revision: number,
   selection: number,
 ) {
+  useLocale();
   const [preview, setPreview] = useState<Preview>({
     headers: "",
     text: "",
     messages: [],
   });
   const [raw, setRaw] = useState<{ text: string; page: RawPage } | null>(null);
-  const [status, setStatus] = useState("等待捕获文件");
+  const [status, setStatus] = useState<{
+    message: MessageKey;
+    values: readonly (string | number)[];
+  }>({ message: "Waiting for capture file", values: [] });
   const [error, setError] = useState("");
   const current = useRef({
     offset: 0,
@@ -45,7 +50,10 @@ export function useCapture(
     setPreview(data.preview);
     setRaw(null);
     setError("");
-    setStatus(name ? "等待连接" : "等待捕获文件");
+    setStatus({
+      message: name ? "Waiting for connection" : "Waiting for capture file",
+      values: [],
+    });
     const schedule = () => {
       if (timer.current) return;
       timer.current = setTimeout(() => {
@@ -88,31 +96,43 @@ export function useCapture(
     if (!name || view !== "stream") return;
     const data = current.current;
     if (data.ended) {
-      setStatus(`已完成 · ${bytes(data.offset)}`);
+      setStatus({ message: "Completed · {0}", values: [bytes(data.offset)] });
       return;
     }
     if (!following) {
-      setStatus(`预览已暂停 · ${bytes(data.offset)} · 磁盘捕获继续`);
+      setStatus({
+        message: "Preview paused · {0} · Capture to disk continues",
+        values: [bytes(data.offset)],
+      });
       return;
     }
     let active = true;
     const stream = new EventSource(
       `/api/tail?name=${encodeURIComponent(name)}&offset=${data.offset}`,
     );
-    setStatus("正在连接流");
+    setStatus({ message: "Connecting to stream", values: [] });
     setError("");
     stream.onopen = () => {
-      if (active) setStatus(`实时预览 · ${bytes(data.offset)}`);
+      if (active)
+        setStatus({
+          message: "Live preview · {0}",
+          values: [bytes(data.offset)],
+        });
     };
     stream.addEventListener("chunk", (event) => {
       if (!active) return;
       try {
         const chunk = JSON.parse(event.data);
         if (chunk.offset !== data.offset)
-          throw Error("流偏移不一致，请重新选择该请求以重放。");
+          throw Error(
+            t("Stream offset mismatch. Select the request again to replay it."),
+          );
         data.decoder!.push(fromBase64(chunk.data));
         data.offset = chunk.next;
-        setStatus(`实时预览 · ${bytes(data.offset)}`);
+        setStatus({
+          message: "Live preview · {0}",
+          values: [bytes(data.offset)],
+        });
       } catch (value) {
         setError(String(value));
         stream.close();
@@ -122,20 +142,32 @@ export function useCapture(
       if (!active) return;
       data.decoder!.end();
       data.ended = true;
-      setStatus(`已完成 · ${bytes(data.offset)}`);
+      setStatus({ message: "Completed · {0}", values: [bytes(data.offset)] });
       stream.close();
     });
     stream.addEventListener("waiting", () => {
-      if (active) setStatus(`等待更多数据 · ${bytes(data.offset)}`);
+      if (active)
+        setStatus({
+          message: "Waiting for more data · {0}",
+          values: [bytes(data.offset)],
+        });
     });
     stream.addEventListener("failure", () => {
       if (active) {
-        setError("捕获文件读取失败，请重新选择或下载原文件。");
+        setError(
+          t(
+            "Could not read the capture file. Select it again or download the original.",
+          ),
+        );
         stream.close();
       }
     });
     stream.onerror = () => {
-      if (active) setStatus("正在重连 · 已接收数据保留");
+      if (active)
+        setStatus({
+          message: "Reconnecting · Received data retained",
+          values: [],
+        });
     };
     return () => {
       active = false;
@@ -149,7 +181,7 @@ export function useCapture(
     if (!name || view === "stream") return;
     const controller = new AbortController();
     setError("");
-    setStatus("正在读取原始数据");
+    setStatus({ message: "Reading raw data", values: [] });
     async function loadRaw() {
       if (view === "raw") {
         const response = await fetch(
@@ -168,7 +200,10 @@ export function useCapture(
             size: data.byteLength,
           },
         });
-        setStatus(`完整原始文件 · ${bytes(data.byteLength)}`);
+        setStatus({
+          message: "Full raw file · {0}",
+          values: [bytes(data.byteLength)],
+        });
         return;
       }
       const page = await get<RawPage>(
@@ -183,12 +218,12 @@ export function useCapture(
           `${(page.offset + index * 16).toString(16).padStart(8, "0")}  ${hex(data.subarray(index * 16, index * 16 + 16))}`,
       ).join("\n");
       setRaw({ text, page });
-      setStatus("原始文件 · 按 64 KiB 分页");
+      setStatus({ message: "Raw file · 64 KiB pages", values: [] });
     }
     loadRaw().catch((value) => {
       if (!controller.signal.aborted) setError(String(value));
     });
     return () => controller.abort();
   }, [name, view, rawOffset, revision, selection]);
-  return { preview, raw, status, error };
+  return { preview, raw, status: t(status.message, status.values), error };
 }

@@ -36,17 +36,17 @@ type appUpdate struct {
 func (u *appUpdate) label() string {
 	switch u.phase {
 	case updateChecking:
-		return "正在检查更新…"
+		return tr("Checking for updates…")
 	case updateAvailable:
-		return "发现新版本 v" + u.release.Version
+		return tr("New version available: v") + u.release.Version
 	case updateDownloading:
-		return "正在下载更新…"
+		return tr("Downloading update…")
 	case updateReady:
-		return "更新已就绪，重启生效"
+		return tr("Update ready. Restart to apply.")
 	case updateRestarting:
-		return "正在重启更新…"
+		return tr("Restarting to update…")
 	default:
-		return "检查更新…"
+		return tr("Check for updates…")
 	}
 }
 
@@ -93,11 +93,11 @@ func (a *app) checkUpdate() {
 			if err != nil {
 				u.phase = updateFailed
 				if !mygo.Updater.Enabled() {
-					u.err = "请先将正式版应用安装到「应用程序」。开发版本和只读磁盘镜像不支持应用内更新。"
+					u.err = tr("Install the release app in Applications first. Development builds and read-only disk images do not support in-app updates.")
 				} else {
-					u.err = "检查更新失败，请检查网络后重试。"
+					u.err = tr("Could not check for updates. Check your network and try again.")
 				}
-				log.Printf("检查更新失败: %v", err)
+				log.Printf(tr("Update check failed: %v"), err)
 			} else if release != nil {
 				u.phase = updateAvailable
 			}
@@ -113,7 +113,7 @@ func (a *app) openUpdate() {
 	u := &a.update
 	if u.window == nil {
 		u.window = mygo.NewWindow(mygo.WindowOptions{
-			Title: "TokenHub 软件更新", Width: 480, Height: 260,
+			Title: tr("TokenHub software update"), Width: 480, Height: 260,
 			DisableResize: true, Content: ui.View(a.updateView),
 		})
 		u.window.OnClosed(func() { u.window = nil })
@@ -148,8 +148,8 @@ func (a *app) downloadUpdate() {
 		mygo.RunOnMain(func() {
 			u.phase = updateReady
 			if err != nil {
-				u.phase, u.err = updateFailed, "下载或安装失败，当前应用保持可用，请重试。"
-				log.Printf("安装更新失败: %v", err)
+				u.phase, u.err = updateFailed, tr("Download or installation failed. The current app remains usable. Please try again.")
+				log.Printf(tr("Update installation failed: %v"), err)
 			}
 			a.redrawUpdate()
 		})
@@ -169,13 +169,13 @@ func (a *app) restartUpdatedApp() {
 			mygo.RunOnMain(func() {
 				a.busy.Store(false)
 				a.update.phase = updateReady
-				a.update.err = "停止代理失败，请重试重启更新。"
+				a.update.err = tr("Could not stop the proxy. Try restarting the update again.")
 				a.redrawUpdate()
 			})
 			return
 		}
 		if err := a.server.Close(); err != nil {
-			log.Printf("关闭管理服务: %v", err)
+			log.Printf(tr("Close management service: %v"), err)
 		}
 		mygo.RunOnMain(func() {
 			a.quitting = true
@@ -190,26 +190,26 @@ func (a *app) updateView(c *ui.Context) {
 	c.SetTheme(&theme)
 	ui.Column(c).Fill().Padding(22).Gap(12).Background(theme.Background).Children(func() {
 		ui.Text(c, u.label()).FontSize(18).FontWeight(600)
-		message := "当前版本 v" + mygo.App.Version()
+		message := tr("Current version: v") + mygo.App.Version()
 		switch u.phase {
 		case updateIdle:
-			message += "，已是最新版本。"
+			message += tr(". You are up to date.")
 		case updateChecking:
-			message = "正在连接更新服务器…"
+			message = tr("Connecting to update server…")
 		case updateAvailable:
-			message = "新版已可下载，下载完成后可选择重启更新。"
+			message = tr("A new version is available. Download it, then restart when ready.")
 		case updateDownloading:
-			message = "正在下载并校验更新，当前代理继续运行。"
+			message = tr("Downloading and verifying the update. Your proxy keeps running.")
 			if u.total > 0 {
-				message = fmt.Sprintf("已下载 %.1f / %.1f MB", float64(u.downloaded)/1e6, float64(u.total)/1e6)
+				message = fmt.Sprintf(tr("Downloaded %.1f / %.1f MB"), float64(u.downloaded)/1e6, float64(u.total)/1e6)
 				if u.downloaded >= u.total {
-					message = "正在校验并安装更新…"
+					message = tr("Verifying and installing update…")
 				}
 			}
 		case updateReady:
-			message = "更新已下载并安装。重启应用后生效，配置和日志会保留。"
+			message = tr("Update downloaded and installed. Restart to apply. Configuration and logs will be preserved.")
 		case updateRestarting:
-			message = "正在停止代理并保存日志，随后将启动新版本…"
+			message = tr("Stopping the proxy and saving logs before launching the new version…")
 		}
 		if u.err != "" {
 			message = u.err
@@ -224,15 +224,15 @@ func (a *app) updateView(c *ui.Context) {
 		}
 		ui.Spacer(c)
 		ui.Row(c).Gap(10).Children(func() {
-			ui.Button(c.Key("later"), "稍后").OnClick(func() { u.window.Close() })
+			ui.Button(c.Key("later"), tr("Later")).OnClick(func() { u.window.Close() })
 			ui.Spacer(c)
 			switch u.phase {
 			case updateReady:
-				ui.Button(c.Key("relaunch-update"), "重启更新").Disabled(a.locked()).OnClick(a.restartUpdatedApp)
+				ui.Button(c.Key("relaunch-update"), tr("Restart to update")).Disabled(a.locked()).OnClick(a.restartUpdatedApp)
 			case updateAvailable:
-				ui.Button(c.Key("download-update"), "下载更新").OnClick(a.downloadUpdate)
+				ui.Button(c.Key("download-update"), tr("Download update")).OnClick(a.downloadUpdate)
 			case updateFailed:
-				ui.Button(c.Key("retry-update"), "重试").OnClick(func() {
+				ui.Button(c.Key("retry-update"), tr("Retry")).OnClick(func() {
 					if u.release != nil {
 						a.downloadUpdate()
 					} else {

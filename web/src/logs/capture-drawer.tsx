@@ -1,3 +1,4 @@
+import { t, useLocale } from "../i18n";
 import {
   Sheet,
   SheetContent,
@@ -39,6 +40,7 @@ export default function CaptureDrawer({
   selection,
   onClose,
 }: Props) {
+  useLocale();
   const drawer = useRef<HTMLDivElement>(null);
   const [drawerRatio, setDrawerRatio] = useState(() => {
     try {
@@ -72,12 +74,12 @@ export default function CaptureDrawer({
         ref={drawer}
         className="logs-drawer"
         style={{ width: `min(100vw, max(360px, ${drawerRatio * 100}vw))` }}
-        aria-label="请求与响应详情"
+        aria-label={t("Request and response details")}
       >
         <div
           className="drawer-resize-handle"
           role="separator"
-          aria-label="调整详情宽度"
+          aria-label={t("Resize details")}
           aria-orientation="vertical"
           aria-valuemin={Math.min(360, window.innerWidth)}
           aria-valuemax={window.innerWidth}
@@ -117,17 +119,27 @@ export default function CaptureDrawer({
         />
         <div className="drawer-body">
           <div className="drawer-header">
-            <SheetTitle>请求详情</SheetTitle>
+            <SheetTitle>{t("Request details")}</SheetTitle>
             <SheetDescription className="sr-only">
-              查看请求头、响应内容、SSE 和 WebSocket 帧。
+              {t(
+                "Inspect headers, response content, SSE events, and WebSocket frames.",
+              )}
             </SheetDescription>
           </div>
-          <section className="capture-inspector" aria-label="请求详情">
+          <section
+            className="capture-inspector"
+            aria-label={t("Request details")}
+          >
             {!detail && !file ? (
               <div className="inspector-empty">
-                <h2>{detailLoading ? "正在加载请求…" : "选择一条记录"}</h2>
+                <h2>
+                  {detailLoading ? t("Loading request…") : t("Select a record")}
+                </h2>
                 <p>
-                  {detailError || "查看请求头、响应内容、SSE 和 WebSocket 帧。"}
+                  {detailError ||
+                    t(
+                      "Inspect headers, response content, SSE events, and WebSocket frames.",
+                    )}
                 </p>
               </div>
             ) : (
@@ -135,8 +147,8 @@ export default function CaptureDrawer({
                 <div className="detail-heading">
                   <h2>
                     {file
-                      ? "捕获文件"
-                      : `${detail?.metadata.method || "请求"} · ${detail?.metadata.response_status_code || "等待响应"}`}
+                      ? t("Capture file")
+                      : `${detail?.metadata.method || t("Request")} · ${detail?.metadata.response_status_code || t("Waiting for response")}`}
                   </h2>
                   <p className="detail-url">
                     {file?.name ||
@@ -151,14 +163,16 @@ export default function CaptureDrawer({
                       ? ` · Provider: ${detail.metadata.provider}`
                       : ""}
                     {detail?.capture_wait_ms !== undefined
-                      ? ` · 采集等待 ${detail.capture_wait_ms.toFixed(2)} ms`
+                      ? t(" · Capture wait {0} ms", [
+                          detail.capture_wait_ms.toFixed(2),
+                        ])
                       : ""}
-                    {detailLoading ? " · 更新中" : ""}
+                    {detailLoading ? t(" · Updating") : ""}
                   </p>
                 </div>
                 {detail && (
                   <details className="capture-metadata">
-                    <summary>生命周期与元数据</summary>
+                    <summary>{t("Lifecycle and metadata")}</summary>
                     <div className="metadata-downloads">
                       {detail.metadata_files?.map((filename) => (
                         <a
@@ -190,7 +204,7 @@ export default function CaptureDrawer({
                   <>
                     <CapturePanel
                       key={`${requestKey}:request:${selection}`}
-                      title="请求"
+                      title={t("Request")}
                       collapseBody
                       name={detail.request_file}
                       revision={revision}
@@ -198,7 +212,7 @@ export default function CaptureDrawer({
                     />
                     <CapturePanel
                       key={`${requestKey}:response:${selection}`}
-                      title="响应"
+                      title={t("Response")}
                       collapseBody
                       name={detail.response_file}
                       revision={revision}
@@ -208,7 +222,7 @@ export default function CaptureDrawer({
                 ) : file ? (
                   <CapturePanel
                     key={`${file.name}:${selection}`}
-                    title="原始文件"
+                    title={t("Raw file")}
                     name={file.name}
                     revision={revision}
                     selection={selection}

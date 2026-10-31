@@ -74,3 +74,31 @@ func TestSavePreferencesOnlyChangesLoginWhenNeeded(t *testing.T) {
 		})
 	}
 }
+
+func TestPreferenceLocalePersistence(t *testing.T) {
+	server := &Server{Manager: &service.Manager{Filename: filepath.Join(t.TempDir(), "config.yaml")}}
+	for _, locale := range []string{"zh-CN", "en", "__unsupported__", ""} {
+		data, _ := json.Marshal(Preferences{AutoStart: true, Locale: locale})
+		request := httptest.NewRequest(http.MethodPost, "/api/preferences", strings.NewReader(string(data)))
+		response := httptest.NewRecorder()
+		server.savePreferences(response, request)
+		want := http.StatusOK
+		if locale == "__unsupported__" {
+			want = http.StatusBadRequest
+		}
+		if response.Code != want {
+			t.Fatalf("locale=%q: status=%d body=%s", locale, response.Code, response.Body)
+		}
+		prefs, err := server.Preferences()
+		if err != nil {
+			t.Fatal(err)
+		}
+		expected := locale
+		if locale == "__unsupported__" {
+			expected = "en"
+		}
+		if prefs.Locale != expected || !prefs.AutoStart {
+			t.Fatalf("locale=%q preferences=%+v", locale, prefs)
+		}
+	}
+}

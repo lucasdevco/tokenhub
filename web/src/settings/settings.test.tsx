@@ -1,4 +1,8 @@
 // @vitest-environment jsdom
+import { beforeEach as beforeEachLocale } from "vitest";
+import { setLocale } from "../i18n";
+import * as i18n from "../i18n";
+beforeEachLocale(() => setLocale("zh-CN"));
 import {
   cleanup,
   act,
@@ -625,3 +629,30 @@ test.each([false, true])(
     expect(control.disabled).toBe(true);
   },
 );
+
+test("local providers without keys work with a default account name in any language", async () => {
+  const originalT = i18n.t;
+  vi.spyOn(i18n, "t").mockImplementation((message, values) =>
+    message === "Personal account"
+      ? "Compte personnel"
+      : originalT(message, values),
+  );
+  renderSettings("/settings/providers");
+  await screen.findByText("点击服务商，编辑地址或管理它的账号。");
+  fireEvent.click(screen.getByRole("button", { name: "添加服务商" }));
+  const name = screen.getByLabelText("名称");
+  fireEvent.change(name, { target: { value: "Local model" } });
+  fireEvent.change(screen.getByLabelText("服务地址"), {
+    target: { value: "http://127.0.0.1:1234" },
+  });
+  expect(screen.getByLabelText("账号名称")).toHaveProperty(
+    "value",
+    "Compte personnel",
+  );
+  fireEvent.submit(name.closest("form")!);
+  await screen.findByText("已添加 Local model，新请求将使用保存后的设置。");
+  const mutation = fetchMock.mock.calls.find(
+    ([path, init]) => path === "/api/providers" && init?.method === "POST",
+  );
+  expect(JSON.parse(String(mutation?.[1]?.body)).service.accounts).toEqual([]);
+});

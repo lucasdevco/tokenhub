@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { beforeEach as beforeEachLocale } from "vitest";
+import { setLocale } from "../i18n";
+beforeEachLocale(() => setLocale("zh-CN"));
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import JsonContent from "./json-content";

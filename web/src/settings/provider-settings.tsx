@@ -1,3 +1,4 @@
+import { t, useLocale } from "../i18n";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -49,7 +50,7 @@ function Picker({
   options,
   onChange,
   disabled = false,
-  placeholder = "无需密钥",
+  placeholder = t("No key required"),
 }: {
   label: string;
   value: string;
@@ -58,6 +59,10 @@ function Picker({
   disabled?: boolean;
   placeholder?: string;
 }) {
+  const locale = useLocale();
+  useEffect(() => {
+    document.title = t("Providers · TokenHub");
+  }, [locale]);
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -150,6 +155,7 @@ function Picker({
   );
 }
 function ServiceMark({ kind }: { kind: string }) {
+  useLocale();
   return (
     <span className={`pa-mark pa-mark-${kind}`} aria-hidden="true">
       {serviceMarks[kind] || <Waypoints size={20} />}
@@ -157,6 +163,7 @@ function ServiceMark({ kind }: { kind: string }) {
   );
 }
 export default function ProviderSettings() {
+  useLocale();
   const [catalog, setCatalog] = useState<Catalog>();
   const [busy, setBusy] = useState(false);
   const services = catalog?.services || [];
@@ -165,6 +172,7 @@ export default function ProviderSettings() {
   const [baseline, setBaseline] = useState("");
   const [adding, setAdding] = useState(false);
   const [accountEditor, setAccountEditor] = useState<Account | null>(null);
+  const initialAccountName = useRef("");
   const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -183,7 +191,6 @@ export default function ProviderSettings() {
       .includes(search.toLowerCase()),
   );
   useEffect(() => {
-    document.title = "服务商 · TokenHub";
     let cancelled = false;
     async function initialize() {
       try {
@@ -250,7 +257,7 @@ export default function ProviderSettings() {
     try {
       await request("/api/service/restart", {});
       setCatalog(await request<Catalog>("/api/providers"));
-      setNotice("服务已重启，已应用保存的配置。");
+      setNotice(t("Service restarted. Saved configuration applied."));
     } catch (value) {
       setError(value instanceof Error ? value.message : String(value));
     } finally {
@@ -259,10 +266,10 @@ export default function ProviderSettings() {
   }
   useBlocker({
     enableBeforeUnload: dirty,
-    shouldBlockFn: () => dirty && !confirm("放弃未保存的修改？"),
+    shouldBlockFn: () => dirty && !confirm(t("Discard unsaved changes?")),
   });
   function open(service: Service) {
-    if (dirty && !confirm("放弃未保存的修改？")) return;
+    if (dirty && !confirm(t("Discard unsaved changes?"))) return;
     setEditor(structuredClone(service));
     setBaseline(JSON.stringify(service));
     setAdding(false);
@@ -272,7 +279,7 @@ export default function ProviderSettings() {
     setDeleting(false);
   }
   function create() {
-    if (busy || (dirty && !confirm("放弃未保存的修改？"))) return;
+    if (busy || (dirty && !confirm(t("Discard unsaved changes?")))) return;
     const service: Service = {
       id: crypto.randomUUID(),
       name: "",
@@ -288,7 +295,12 @@ export default function ProviderSettings() {
     setEditor(service);
     setBaseline(JSON.stringify(service));
     setAdding(true);
-    setAccountEditor({ id: crypto.randomUUID(), name: "个人账号", key: "" });
+    initialAccountName.current = t("Personal account");
+    setAccountEditor({
+      id: crypto.randomUUID(),
+      name: initialAccountName.current,
+      key: "",
+    });
     setShowKey(false);
     setError("");
     setDeleting(false);
@@ -296,7 +308,7 @@ export default function ProviderSettings() {
   }
   function close() {
     if (busy) return;
-    if (dirty && !confirm("放弃未保存的修改？")) return;
+    if (dirty && !confirm(t("Discard unsaved changes?"))) return;
     setEditor(null);
     setAccountEditor(null);
     setError("");
@@ -311,7 +323,7 @@ export default function ProviderSettings() {
       adding &&
       editor.accounts.length === 0 &&
       accountEditor.key.trim() === "" &&
-      accountEditor.name === "个人账号"
+      accountEditor.name === initialAccountName.current
     )
       return editor;
     const account = {
@@ -320,7 +332,7 @@ export default function ProviderSettings() {
       key: accountEditor.key.trim(),
     };
     if (!account.name || !account.key) {
-      setError("请填写账号名称和 API Key。");
+      setError(t("Enter an account name and API key."));
       return null;
     }
     if (
@@ -328,7 +340,7 @@ export default function ProviderSettings() {
         (item) => item.id !== account.id && item.name === account.name,
       )
     ) {
-      setError("账号名称已存在，请换一个名称。");
+      setError(t("This account name already exists. Choose another name."));
       return null;
     }
     const exists = editor.accounts.some((item) => item.id === account.id);
@@ -346,14 +358,14 @@ export default function ProviderSettings() {
     const next = applyAccount();
     if (!next) return;
     if (!next.name.trim() || !next.address.trim()) {
-      setError("请填写服务商名称和服务地址。");
+      setError(t("Enter a provider name and service URL."));
       return;
     }
     try {
       const url = new URL(next.address);
       if (!["http:", "https:"].includes(url.protocol)) throw Error();
     } catch {
-      setError("请输入以 https:// 或 http:// 开头的完整地址。");
+      setError(t("Enter a complete URL starting with https:// or http://."));
       return;
     }
     next.name = next.name.trim();
@@ -366,7 +378,10 @@ export default function ProviderSettings() {
           new: adding,
           activate: adding && addToCurrent,
         },
-        `已${adding ? "添加" : "保存"} ${next.name}，新请求将使用保存后的设置。`,
+        t("{0} {1}. New requests will use the saved settings.", [
+          adding ? t("Added") : t("Saved"),
+          next.name,
+        ]),
       )
     ) {
       setEditor(next);
@@ -380,14 +395,16 @@ export default function ProviderSettings() {
     const service = services.find((item) => item.id === id)!;
     await change(
       { action: "select", provider: id },
-      `已切换到 ${service.name}。`,
+      t("Switched to {0}.", [service.name]),
     );
   }
   async function switchAccount(id: string) {
     if (!current) return;
     const changed = await change(
       { action: "account", provider: current.id, account: id },
-      `已切换到 ${current.accounts.find((account) => account.id === id)?.name}，新请求立即生效。`,
+      t("Switched to {0}. New requests use it immediately.", [
+        current.accounts.find((account) => account.id === id)?.name || "",
+      ]),
     );
     if (changed && editor?.id === current.id) {
       const next = { ...editor, active: id };
@@ -400,7 +417,7 @@ export default function ProviderSettings() {
     if (
       await change(
         { action: "delete", provider: editor.id },
-        `已删除 ${editor.name}。`,
+        t("Deleted {0}.", [editor.name]),
       )
     ) {
       setEditor(null);
@@ -417,10 +434,10 @@ export default function ProviderSettings() {
           <span className={`status ${catalog.status.state}`}>
             <i />
             {catalog.status.state === "running"
-              ? "运行中"
+              ? t("Running")
               : catalog.status.state === "error"
-                ? "启动失败"
-                : "已停止"}
+                ? t("Failed to start")
+                : t("Stopped")}
           </span>
         )}
         <div className="pa-header-actions">
@@ -430,11 +447,11 @@ export default function ProviderSettings() {
             disabled={busy || dirty}
             onClick={reload}
           >
-            重新加载
+            {t("Reload")}
           </Button>
           {catalog?.status.pending && (
             <Button size="sm" disabled={busy || dirty} onClick={restart}>
-              重启并应用
+              {t("Restart and apply")}
             </Button>
           )}
         </div>
@@ -449,20 +466,26 @@ export default function ProviderSettings() {
           )}
           {catalog?.status.pending && (
             <p className="pa-error" role="status">
-              其他配置待应用，请先点击“重启并应用”，再修改服务商或切换账号。
+              {t(
+                'Other configuration changes are pending. Click "Restart and apply" before editing providers or switching accounts.',
+              )}
             </p>
           )}
           {!catalog ? (
             <div className="empty">
-              {error ? "无法加载服务商。请重新加载。" : "正在加载服务商…"}
+              {error
+                ? t("Could not load providers. Please reload.")
+                : t("Loading providers…")}
             </div>
           ) : (
             <>
               <div className="heading">
                 <div>
-                  <h1>服务商</h1>
+                  <h1>{t("Provider")}</h1>
                   <p className="intro">
-                    管理服务地址和账号，在不同账号之间轻松切换。
+                    {t(
+                      "Manage service URLs and accounts, and switch between accounts.",
+                    )}
                   </p>
                 </div>
                 <Button
@@ -471,20 +494,20 @@ export default function ProviderSettings() {
                   onClick={create}
                 >
                   <Plus />
-                  添加服务商
+                  {t("Add provider")}
                 </Button>
               </div>
               <div className="pa-current">
                 <div className="pa-current-title">
                   <span className="pa-dot" />
-                  <span>当前使用</span>
+                  <span>{t("In use")}</span>
                 </div>
                 <div className="pa-switch">
-                  <span>服务商</span>
+                  <span>{t("Provider")}</span>
                   <Picker
-                    label="切换服务商"
+                    label={t("Switch provider")}
                     disabled={busy || dirty || catalog.status.pending}
-                    placeholder="未选择服务商"
+                    placeholder={t("No service provider selected")}
                     value={activeId}
                     options={services.map((service) => ({
                       value: service.id,
@@ -492,9 +515,9 @@ export default function ProviderSettings() {
                     }))}
                     onChange={switchService}
                   />
-                  <span>账号</span>
+                  <span>{t("Account")}</span>
                   <Picker
-                    label="切换账号"
+                    label={t("Switch account")}
                     disabled={busy || dirty || catalog.status.pending}
                     value={current?.active || ""}
                     options={
@@ -507,17 +530,20 @@ export default function ProviderSettings() {
                   />
                 </div>
               </div>
-              <p className="pa-switch-help">每个服务商会记住上次使用的账号。</p>
+              <p className="pa-switch-help">
+                {t("Each provider remembers the last account you used.")}
+              </p>
               <div className="pa-workspace">
                 <div className="pa-list">
                   <div className="pa-list-heading">
                     <h2>
-                      已添加的服务商 <span>{services.length}</span>
+                      {t("Configured providers")}
+                      <span>{services.length}</span>
                     </h2>
                     <Input
                       className="pa-search"
-                      aria-label="搜索服务商"
-                      placeholder="搜索名称、地址或账号"
+                      aria-label={t("Search providers")}
+                      placeholder={t("Search name, URL, or account")}
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
                     />
@@ -529,7 +555,7 @@ export default function ProviderSettings() {
                         aria-pressed={editor?.id === service.id}
                         key={service.id}
                         onClick={() => open(service)}
-                        aria-label={`编辑 ${service.name}`}
+                        aria-label={t("Edit {0}", [service.name])}
                         disabled={busy || catalog.status.pending}
                       >
                         <ServiceMark kind={service.kind} />
@@ -537,7 +563,7 @@ export default function ProviderSettings() {
                           <strong>
                             {service.name}
                             {service.id === activeId && (
-                              <span className="pa-using">当前使用</span>
+                              <span className="pa-using">{t("In use")}</span>
                             )}
                           </strong>
                           <small>{service.address}</small>
@@ -546,12 +572,12 @@ export default function ProviderSettings() {
                           <span>
                             {service.accounts.find(
                               (account) => account.id === service.active,
-                            )?.name || "无需密钥"}
+                            )?.name || t("No key required")}
                           </span>
                           <small>
                             {service.accounts.length
-                              ? `${service.accounts.length} 个账号`
-                              : "未添加账号"}
+                              ? t("{0} accounts", [service.accounts.length])
+                              : t("No accounts")}
                           </small>
                         </span>
                         <ChevronRight size={16} />
@@ -562,13 +588,15 @@ export default function ProviderSettings() {
                         <Waypoints size={24} />
                         <strong>
                           {services.length
-                            ? "没有找到服务商"
-                            : "添加你的第一个服务商"}
+                            ? t("No providers found")
+                            : t("Add your first provider")}
                         </strong>
                         <p>
                           {services.length
-                            ? "试试其他名称、地址或账号。"
-                            : "填写服务名称、地址和 API Key 即可开始。"}
+                            ? t("Try another name, URL, or account.")
+                            : t(
+                                "Enter a service name, URL, and API key to get started.",
+                              )}
                         </p>
                         <Button
                           size="sm"
@@ -577,13 +605,15 @@ export default function ProviderSettings() {
                             services.length ? setSearch("") : create()
                           }
                         >
-                          {services.length ? "清除搜索" : "添加服务商"}
+                          {services.length
+                            ? t("Clear search")
+                            : t("Add provider")}
                         </Button>
                       </div>
                     )}
                   </div>
                   <p className="pa-list-help">
-                    点击服务商，编辑地址或管理它的账号。
+                    {t("Select a provider to edit its URL or manage accounts.")}
                   </p>
                 </div>
                 <section
@@ -592,12 +622,14 @@ export default function ProviderSettings() {
                 >
                   <div className="pa-dialog-heading">
                     <h2 id="pa-editor-title">
-                      {adding ? "添加服务商" : editor?.name || "服务商设置"}
+                      {adding
+                        ? t("Add provider")
+                        : editor?.name || t("Provider settings")}
                     </h2>
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="关闭编辑"
+                      aria-label={t("Close editor")}
                       onClick={close}
                     >
                       <X />
@@ -605,10 +637,14 @@ export default function ProviderSettings() {
                   </div>
                   <p className="pa-dialog-description">
                     {adding
-                      ? "填写自定义服务的名称、地址和 API Key。"
+                      ? t(
+                          "Enter a name, URL, and API key for your custom service.",
+                        )
                       : editor
-                        ? "管理此服务商的地址和账号。"
-                        : "从左侧选择服务商，编辑地址或管理账号。"}
+                        ? t("Manage this provider's URL and accounts.")
+                        : t(
+                            "Select a provider on the left to edit its URL or manage accounts.",
+                          )}
                   </p>
                   {editor && (
                     <form
@@ -619,17 +655,17 @@ export default function ProviderSettings() {
                     >
                       <fieldset disabled={busy} className="pa-dialog-fields">
                         <div className="pa-dialog-body">
-                          <Field label="名称">
+                          <Field label={t("Name")}>
                             <Input
                               autoFocus={adding}
                               value={editor.name}
-                              placeholder="例如：OpenRouter"
+                              placeholder={t("e.g. OpenRouter")}
                               onChange={(event) =>
                                 patch({ name: event.target.value })
                               }
                             />
                           </Field>
-                          <Field label="服务地址">
+                          <Field label={t("Service URL")}>
                             <Input
                               value={editor.address}
                               placeholder="https://api.example.com"
@@ -640,7 +676,8 @@ export default function ProviderSettings() {
                           </Field>
                           <div className="pa-section-title">
                             <h2>
-                              账号 <span>{editor.accounts.length}</span>
+                              {t("Account")}
+                              <span>{editor.accounts.length}</span>
                             </h2>
                             {!accountEditor && (
                               <Button
@@ -658,7 +695,7 @@ export default function ProviderSettings() {
                                 }}
                               >
                                 <Plus />
-                                添加账号
+                                {t("Add account")}
                               </Button>
                             )}
                           </div>
@@ -668,7 +705,7 @@ export default function ProviderSettings() {
                                 <KeyRound size={16} />
                                 <div>
                                   <strong>{account.name}</strong>
-                                  <small>API Key 已设置</small>
+                                  <small>{t("API key configured")}</small>
                                 </div>
                                 <label className="pa-account-radio">
                                   <input
@@ -681,8 +718,8 @@ export default function ProviderSettings() {
                                   />
                                   <span>
                                     {editor.active === account.id
-                                      ? "当前账号"
-                                      : "使用此账号"}
+                                      ? t("Current account")
+                                      : t("Use this account")}
                                   </span>
                                 </label>
                                 <Button
@@ -696,13 +733,15 @@ export default function ProviderSettings() {
                                     setError("");
                                   }}
                                 >
-                                  编辑
+                                  {t("Edit")}
                                 </Button>
                               </div>
                             ))}
                             {!editor.accounts.length && !accountEditor && (
                               <p className="pa-no-accounts">
-                                还没有账号。本地服务可以不填密钥。
+                                {t(
+                                  "No accounts yet. Local services can work without a key.",
+                                )}
                               </p>
                             )}
                           </div>
@@ -712,14 +751,14 @@ export default function ProviderSettings() {
                                 {editor.accounts.some(
                                   (account) => account.id === accountEditor.id,
                                 )
-                                  ? "编辑账号"
-                                  : "新账号"}
+                                  ? t("Edit account")
+                                  : t("New account")}
                               </h3>
-                              <Field label="账号名称">
+                              <Field label={t("Account name")}>
                                 <Input
                                   autoFocus={!adding}
                                   value={accountEditor.name}
-                                  placeholder="例如：个人账号、公司账号"
+                                  placeholder={t("e.g. Personal, Work")}
                                   onChange={(event) => {
                                     setAccountEditor({
                                       ...accountEditor,
@@ -737,7 +776,7 @@ export default function ProviderSettings() {
                                     autoComplete="off"
                                     spellCheck={false}
                                     value={accountEditor.key}
-                                    placeholder="粘贴你的 API Key"
+                                    placeholder={t("Paste your API key")}
                                     onChange={(event) => {
                                       setAccountEditor({
                                         ...accountEditor,
@@ -751,7 +790,9 @@ export default function ProviderSettings() {
                                     variant="ghost"
                                     size="sm"
                                     aria-label={
-                                      showKey ? "隐藏 API Key" : "显示 API Key"
+                                      showKey
+                                        ? t("Hide API key")
+                                        : t("Show API key")
                                     }
                                     aria-pressed={showKey}
                                     onClick={() => setShowKey(!showKey)}
@@ -772,7 +813,10 @@ export default function ProviderSettings() {
                                     onClick={() => {
                                       if (
                                         !confirm(
-                                          `删除账号“${accountEditor.name}”？保存服务商后生效。`,
+                                          t(
+                                            'Delete account "{0}"? This takes effect after saving the provider.',
+                                            [accountEditor.name],
+                                          ),
                                         )
                                       )
                                         return;
@@ -791,7 +835,7 @@ export default function ProviderSettings() {
                                     }}
                                   >
                                     <Trash2 />
-                                    删除账号
+                                    {t("Delete account")}
                                   </Button>
                                 )}
                                 <span />
@@ -804,7 +848,7 @@ export default function ProviderSettings() {
                                     setError("");
                                   }}
                                 >
-                                  取消
+                                  {t("Cancel")}
                                 </Button>
                                 <Button
                                   type="button"
@@ -819,17 +863,17 @@ export default function ProviderSettings() {
                                     }
                                   }}
                                 >
-                                  完成
+                                  {t("Done")}
                                 </Button>
                               </div>
                             </div>
                           )}
                           <details className="pa-advanced">
                             <summary>
-                              高级设置
+                              {t("Advanced settings")}
                               <ChevronDown size={14} />
                             </summary>
-                            <Field label="鉴权请求头">
+                            <Field label={t("Authorization header")}>
                               <Input
                                 value={editor.header}
                                 onChange={(event) =>
@@ -837,7 +881,7 @@ export default function ProviderSettings() {
                                 }
                               />
                             </Field>
-                            <Field label="密钥格式">
+                            <Field label={t("Key format")}>
                               <Input
                                 value={editor.template}
                                 onChange={(event) =>
@@ -846,20 +890,22 @@ export default function ProviderSettings() {
                               />
                             </Field>
                             <Field
-                              label="上游代理"
-                              help="开启时使用常用配置中的上游代理设置，关闭时直接连接服务商。"
+                              label={t("Upstream proxy")}
+                              help={t(
+                                "When enabled, use the upstream proxy in General settings. Otherwise, connect directly to the provider.",
+                              )}
                             >
                               <Toggle
-                                label="启用上游代理"
+                                label={t("Enable upstream proxy")}
                                 value={editor.proxy_enabled}
                                 onChange={(value) =>
                                   patch({ proxy_enabled: value })
                                 }
                               />
                             </Field>
-                            <Field label="请求日志">
+                            <Field label={t("Request logs")}>
                               <Toggle
-                                label="记录此服务商的请求"
+                                label={t("Record requests for this provider")}
                                 value={editor.logging}
                                 onChange={(value) => patch({ logging: value })}
                               />
@@ -874,7 +920,7 @@ export default function ProviderSettings() {
                                   setAddToCurrent(event.target.checked)
                                 }
                               />
-                              添加后使用此服务商
+                              {t("Use this provider after adding")}
                             </label>
                           )}
                           {error && (
@@ -884,7 +930,11 @@ export default function ProviderSettings() {
                           )}
                           {deleting && (
                             <div className="pa-delete-confirm" role="alert">
-                              <p>删除 {editor.name} 及其所有账号？</p>
+                              <p>
+                                {t("Delete {0} and all its accounts?", [
+                                  editor.name,
+                                ])}
+                              </p>
                               <div>
                                 <Button
                                   type="button"
@@ -892,7 +942,7 @@ export default function ProviderSettings() {
                                   size="sm"
                                   onClick={() => setDeleting(false)}
                                 >
-                                  取消
+                                  {t("Cancel")}
                                 </Button>
                                 <Button
                                   type="button"
@@ -900,7 +950,7 @@ export default function ProviderSettings() {
                                   size="sm"
                                   onClick={remove}
                                 >
-                                  确认删除
+                                  {t("Confirm deletion")}
                                 </Button>
                               </div>
                             </div>
@@ -916,7 +966,7 @@ export default function ProviderSettings() {
                               onClick={() => setDeleting(true)}
                             >
                               <Trash2 />
-                              删除服务商
+                              {t("Delete provider")}
                             </Button>
                           )}
                           <span />
@@ -926,10 +976,14 @@ export default function ProviderSettings() {
                             size="sm"
                             onClick={close}
                           >
-                            取消
+                            {t("Cancel")}
                           </Button>
                           <Button type="submit" size="sm">
-                            {busy ? "保存中…" : adding ? "添加服务商" : "保存"}
+                            {busy
+                              ? t("Saving…")
+                              : adding
+                                ? t("Add provider")
+                                : t("Saved")}
                           </Button>
                         </div>
                       </fieldset>
@@ -939,18 +993,25 @@ export default function ProviderSettings() {
                   {!editor && (
                     <div className="pa-empty">
                       <Waypoints size={28} />
-                      <strong>选择一个服务商</strong>
-                      <p>在左侧选择服务商，或添加新的服务商。</p>
+                      <strong>{t("Select a provider")}</strong>
+                      <p>
+                        {t("Select a provider on the left, or add a new one.")}
+                      </p>
                     </div>
                   )}
                 </section>
               </div>
               <div className="pa-notice" role="status">
                 {notice ||
-                  `当前选择：${current?.name || "未选择服务商"}${currentAccount ? ` · ${currentAccount.name}` : ""}`}
+                  t("Selected: {0}{1}", [
+                    current?.name || t("No service provider selected"),
+                    currentAccount ? ` · ${currentAccount.name}` : "",
+                  ])}
               </div>
               <p className="pa-local-note">
-                切换只影响新请求，正在进行的请求会继续完成。
+                {t(
+                  "Switching affects new requests only. Requests already in progress will complete.",
+                )}
               </p>
             </>
           )}

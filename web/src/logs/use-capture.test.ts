@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+import { beforeEach as beforeEachLocale } from "vitest";
+import { setLocale } from "../i18n";
+beforeEachLocale(() => setLocale("zh-CN"));
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { useCapture, type View } from "./use-capture";

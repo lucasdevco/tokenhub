@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import * as React from "react";
 import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -65,7 +66,7 @@ const SheetContent = React.forwardRef<
     >
       <SheetPrimitive.Close className="absolute right-3 top-2 z-10 flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <X className="h-4 w-4" />
-        <span className="sr-only">关闭详情</span>
+        <span className="sr-only">{t("Close details")}</span>
       </SheetPrimitive.Close>
       {children}
     </SheetPrimitive.Content>

@@ -1,3 +1,4 @@
+import { getLocale, t, useLocale } from "../i18n";
 import {
   Bar,
   BarChart,
@@ -23,9 +24,10 @@ export default function RequestChart({
   loading: boolean;
   error: boolean;
 }) {
+  useLocale();
   const buckets = histogram?.buckets || [];
   const label = (value: string) =>
-    new Date(value).toLocaleString(undefined, {
+    new Date(value).toLocaleString(getLocale(), {
       ...(hours === "168" ? { month: "numeric", day: "numeric" } : {}),
       hour: "2-digit",
       minute: "2-digit",
@@ -34,31 +36,36 @@ export default function RequestChart({
   return (
     <section
       className="request-chart"
-      aria-label="请求量趋势"
+      aria-label={t("Request volume trend")}
       aria-describedby="request-chart-description"
       aria-busy={loading}
     >
       <div className="request-chart-heading">
         <div className="request-chart-title">
-          <h2>请求量</h2>
+          <h2>{t("Requests")}</h2>
           <span>
             {loading
-              ? "正在加载…"
+              ? t("Loading…")
               : error
-                ? "统计暂不可用"
+                ? t("Statistics unavailable")
                 : histogram
-                  ? `${histogram.total.toLocaleString()} 次请求 · 每 ${interval < 3600 ? `${interval / 60} 分钟` : `${interval / 3600} 小时`}`
-                  : "统计暂不可用"}
+                  ? t("{0} requests · per {1}", [
+                      histogram.total.toLocaleString(getLocale()),
+                      interval < 3600
+                        ? t("{0} min", [interval / 60])
+                        : t("{0} hr", [interval / 3600]),
+                    ])
+                  : t("Statistics unavailable")}
           </span>
         </div>
         <SegmentedControl
-          aria-label="统计时间范围"
+          aria-label={t("Statistics time range")}
           value={hours}
           onValueChange={onHoursChange}
           options={[
-            { value: "1", label: "最近 1 小时" },
-            { value: "24", label: "最近 24 小时" },
-            { value: "168", label: "最近 7 天" },
+            { value: "1", label: t("Last hour") },
+            { value: "24", label: t("Last 24 hours") },
+            { value: "168", label: t("Last 7 days") },
           ]}
         />
       </div>
@@ -67,7 +74,7 @@ export default function RequestChart({
           <BarChart
             data={error ? [] : buckets}
             accessibilityLayer
-            aria-label="请求量趋势柱状图"
+            aria-label={t("Request volume bar chart")}
             margin={{ top: 4, right: 8, bottom: 0, left: 0 }}
             barCategoryGap="15%"
           >
@@ -84,7 +91,9 @@ export default function RequestChart({
             <YAxis
               allowDecimals={false}
               tick={{ fill: "var(--muted)", fontSize: 11 }}
-              tickFormatter={(value: number) => value.toLocaleString()}
+              tickFormatter={(value: number) =>
+                value.toLocaleString(getLocale())
+              }
               axisLine={false}
               tickLine={false}
               width={48}
@@ -101,8 +110,8 @@ export default function RequestChart({
                 return `${label(started)}–${label(end)}`;
               }}
               formatter={(value) => [
-                `${Number(value).toLocaleString()} 次请求`,
-                "请求量",
+                t("{0} requests", [Number(value).toLocaleString(getLocale())]),
+                t("Requests"),
               ]}
               contentStyle={{
                 background: "var(--surface)",
@@ -114,7 +123,7 @@ export default function RequestChart({
             />
             <Bar
               dataKey="count"
-              name="请求量"
+              name={t("Requests")}
               fill="var(--accent)"
               radius={[2, 2, 0, 0]}
               isAnimationActive={false}
@@ -122,16 +131,22 @@ export default function RequestChart({
           </BarChart>
         </ResponsiveContainer>
         {!loading && !error && histogram?.total === 0 && (
-          <p className="request-chart-empty">这段时间没有匹配的请求</p>
+          <p className="request-chart-empty">
+            {t("No matching requests in this period")}
+          </p>
         )}
         {(error || !histogram) && (
           <p className="request-chart-empty">
-            {loading ? "正在加载请求量…" : "无法加载请求量，请刷新重试"}
+            {loading
+              ? t("Loading request volume…")
+              : t("Could not load request volume. Refresh to try again.")}
           </p>
         )}
       </div>
       <p className="sr-only" id="request-chart-description">
-        按请求开始时间统计，跟随搜索与状态筛选；下方列表保留全部历史记录。时间为本地时间。
+        {t(
+          "Grouped by request start time and filtered by search and status. The list below retains all history. Times are local.",
+        )}
       </p>
     </section>
   );

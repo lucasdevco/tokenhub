@@ -59,9 +59,9 @@ func (a *app) action(name string, fn func() error) {
 			a.actionName = ""
 			a.busy.Store(false)
 			if name != "" {
-				a.restartNotice = map[string]string{"restart": "服务已重启", "provider": "服务商已切换，新请求立即生效", "account": "账号已切换，新请求立即生效"}[name]
+				a.restartNotice = map[string]string{"restart": tr("Service restarted"), "provider": tr("Provider switched. New requests use it immediately."), "account": tr("Account switched. New requests take effect immediately.")}[name]
 				if err != nil {
-					a.restartNotice = "操作失败：" + err.Error()
+					a.restartNotice = tr("Operation failed: ") + err.Error()
 				}
 				a.noticeUntil = time.Now().Add(3 * time.Second)
 			}
@@ -71,6 +71,11 @@ func (a *app) action(name string, fn func() error) {
 }
 
 func (a *app) refresh() {
+	if a.server != nil {
+		if prefs, err := a.server.Preferences(); err == nil {
+			language.Store(prefs.Locale)
+		}
+	}
 	a.status = a.manager.Status()
 	if a.panel != nil {
 		a.loadSelections()
@@ -87,15 +92,15 @@ func (a *app) refresh() {
 func stateLabel(state string) string {
 	switch state {
 	case "running":
-		return "运行中"
+		return tr("Running")
 	case "starting":
-		return "启动中…"
+		return tr("Starting…")
 	case "stopping":
-		return "停止中…"
+		return tr("Stopping…")
 	case "error":
-		return "启动失败"
+		return tr("Failed to start")
 	default:
-		return "已停止"
+		return tr("Stopped")
 	}
 }
 
@@ -138,7 +143,7 @@ func (a *app) ready() {
 	})
 	if err != nil {
 		log.Print(err)
-		_, _ = mygo.Dialog.Message(mygo.MessageOptions{Type: mygo.MessageError, Title: "TokenHub 无法启动", Message: err.Error()})
+		_, _ = mygo.Dialog.Message(mygo.MessageOptions{Type: mygo.MessageError, Title: tr("TokenHub could not start"), Message: err.Error()})
 		mygo.App.Quit()
 		return
 	}
@@ -167,10 +172,10 @@ func (a *app) ready() {
 			if a.manager.Status().State == "running" {
 				answer, err := mygo.Dialog.Message(mygo.MessageOptions{
 					Type:          mygo.MessageQuestion,
-					Title:         "退出 TokenHub？",
-					Message:       "退出将停止代理与本机管理网页。",
-					Detail:        "已记录的请求日志保留在本机。",
-					Buttons:       []string{"取消", "停止服务并退出"},
+					Title:         tr("Quit TokenHub?"),
+					Message:       tr("Quitting will stop the proxy and the local management interface."),
+					Detail:        tr("Recorded request logs will remain on this computer."),
+					Buttons:       []string{tr("Cancel"), tr("Stop service and quit")},
 					DefaultButton: 0,
 					CancelButton:  0,
 				})
@@ -179,7 +184,7 @@ func (a *app) ready() {
 				}
 			}
 			if err := a.manager.Stop(); err != nil {
-				log.Printf("停止代理或日志收尾失败: %v", err)
+				log.Printf(tr("Failed to stop proxy or finalize logs: %v"), err)
 			}
 			_ = server.Close()
 			mygo.RunOnMain(func() { a.quitting = true; mygo.App.Quit() })
@@ -246,7 +251,7 @@ func main() {
 	}
 	programLog, err := service.OpenProgramLog(*filename)
 	if err != nil {
-		log.Printf("无法保存程序日志: %v", err)
+		log.Printf(tr("Could not save application log: %v"), err)
 	} else {
 		defer programLog.Close()
 	}
@@ -261,7 +266,7 @@ func main() {
 		log.Print(err)
 	}
 	if err := manager.Stop(); err != nil {
-		log.Printf("停止代理或日志收尾失败: %v", err)
+		log.Printf(tr("Failed to stop proxy or finalize logs: %v"), err)
 	}
 	if a.server != nil {
 		_ = a.server.Close()

@@ -1,3 +1,5 @@
+import LanguageSelect from "./language-select";
+import { t, useLocale, type MessageKey } from "./i18n";
 import {
   Activity,
   Terminal,
@@ -10,11 +12,11 @@ import { Button } from "./components/ui/button";
 import { Link } from "@tanstack/react-router";
 
 export const settingsItems = [
-  ["basic", "常用配置"],
-  ["providers", "服务商"],
-  ["yaml", "完整 YAML"],
-  ["app", "客户端偏好"],
-] as const;
+  ["basic", "General settings"],
+  ["providers", "Provider"],
+  ["yaml", "Full YAML"],
+  ["app", "App preferences"],
+] as const satisfies readonly (readonly [string, MessageKey])[];
 
 export type SettingsTab = (typeof settingsItems)[number][0];
 
@@ -38,9 +40,10 @@ export default function Sidebar({
   active: SettingsTab | "logs";
   settingsAvailable?: boolean;
 }) {
+  useLocale();
   return (
     <aside>
-      <nav aria-label="主导航">
+      <nav aria-label={t("Main navigation")}>
         <Button asChild variant="ghost" className="nav-item">
           <Link
             to="/logs"
@@ -48,7 +51,7 @@ export default function Sidebar({
             aria-current={active === "logs" ? "page" : undefined}
           >
             <Activity aria-hidden="true" />
-            请求日志
+            {t("Request logs")}
           </Link>
         </Button>
         {settingsAvailable &&
@@ -65,7 +68,7 @@ export default function Sidebar({
                     aria-current={active === key ? "page" : undefined}
                   >
                     <Icon aria-hidden="true" />
-                    {label}
+                    {t(label)}
                   </Link>
                 </Button>
               );
@@ -75,7 +78,7 @@ export default function Sidebar({
             className="sidebar-advanced"
             open={active === "yaml" ? true : undefined}
           >
-            <summary>高级</summary>
+            <summary>{t("Advanced")}</summary>
             {settingsItems
               .filter(([key]) => key === "yaml")
               .map(([key, label]) => {
@@ -93,17 +96,18 @@ export default function Sidebar({
                       aria-current={active === key ? "page" : undefined}
                     >
                       <Icon aria-hidden="true" />
-                      {label}
+                      {t(label)}
                     </Link>
                   </Button>
                 );
               })}
           </details>
         )}
+        <LanguageSelect />
         <Button asChild variant="ghost" className="nav-item sidebar-bottom">
           <Link to="/examples">
             <Terminal aria-hidden="true" />
-            请求示例
+            {t("Request examples")}
           </Link>
         </Button>
       </nav>

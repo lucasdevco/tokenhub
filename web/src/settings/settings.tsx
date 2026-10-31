@@ -1,3 +1,4 @@
+import { t, useLocale, type MessageKey } from "../i18n";
 import { ServiceControls } from "../service-controls";
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -38,18 +39,23 @@ type Tab = SettingsTab;
 const SettingsPages = createContext<Partial<Record<Tab, ReactNode>>>({});
 
 export function SettingsPage({ tab }: { tab: Tab }) {
+  const locale = useLocale();
+  useEffect(() => {
+    document.title = t("Settings · TokenHub");
+  }, [locale]);
   return useContext(SettingsPages)[tab];
 }
 
-const labels: Record<string, string> = {
-  stopped: "已停止",
-  starting: "启动中",
-  running: "运行中",
-  stopping: "停止中",
-  error: "启动失败",
+const labels: Record<string, MessageKey> = {
+  stopped: "Stopped",
+  starting: "Starting",
+  running: "Running",
+  stopping: "Stopping",
+  error: "Failed to start",
 };
 
 export default function Settings() {
+  useLocale();
   const tab = useLocation({
     select: (location) => settingsTab(location.pathname),
   });
@@ -74,7 +80,6 @@ export default function Settings() {
   const { config: cfg, error: yamlError } = readDraft(draft);
   const dirty = !!config && draft !== config.yaml;
   useEffect(() => {
-    document.title = "设置 · TokenHub";
     let cancelled = false;
     async function load() {
       try {
@@ -129,7 +134,9 @@ export default function Settings() {
         (!next.pathname.startsWith("/settings/") ||
           next.pathname === "/settings/providers")
       ) {
-        return !confirm("离开会放弃未保存的配置修改，继续？");
+        return !confirm(
+          t("Leaving will discard unsaved configuration changes. Continue?"),
+        );
       }
       return false;
     },
@@ -137,7 +144,11 @@ export default function Settings() {
   function edit(path: (string | number)[], value: unknown) {
     const next = parseDocument(draft);
     if (next.errors.length) {
-      setError("YAML 存在语法错误，请先到完整 YAML 页面修复。");
+      setError(
+        t(
+          "The YAML contains syntax errors. Fix them on the Full YAML page first.",
+        ),
+      );
       return;
     }
     if (value === undefined) next.deleteIn(path);
@@ -184,7 +195,7 @@ export default function Settings() {
       setRestarting(false);
     }
     setStatus(next);
-    setNotice("服务已重启，已应用当前保存的配置。");
+    setNotice(t("Service restarted with the saved configuration."));
   }
   async function save() {
     if (!config) return;
@@ -196,19 +207,21 @@ export default function Settings() {
     setConfig({ ...config, yaml: draft, version: result.version });
     setStatus(await api("/api/status"));
     setNotice(
-      "配置已保存。" +
+      t("Configuration saved. ") +
         (status?.state === "running"
-          ? "重启代理后生效。"
-          : "下次启动代理时生效。"),
+          ? t("Restart the proxy to apply changes.")
+          : t("Changes apply the next time the proxy starts.")),
     );
   }
   const locked =
     busy || offline || ["starting", "stopping"].includes(status?.state || "");
   const providerHelp = dirty
-    ? "请先保存或放弃当前修改，再切换 Provider。"
+    ? t("Save or discard your changes before switching providers.")
     : status?.pending
-      ? "配置待应用，请先重启代理再切换。"
-      : "切换立即保存并生效，新请求使用所选 Provider；正在进行的请求不受影响。";
+      ? t("Configuration pending. Restart the proxy before switching.")
+      : t(
+          "The selection is saved immediately. New requests use the selected provider. Requests in progress are unaffected.",
+        );
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -218,10 +231,10 @@ export default function Settings() {
         <span className={`status ${status?.state || "stopped"}`}>
           <i />
           {offline
-            ? "管理服务离线"
+            ? t("Management service offline")
             : restarting
-              ? "重启中…"
-              : labels[status?.state || "stopped"]}
+              ? t("Restarting…")
+              : t(labels[status?.state || "stopped"])}
         </span>
         <ServiceControls
           accounts={
@@ -263,7 +276,9 @@ export default function Settings() {
               setConfig(next);
               setDraft(next.yaml);
               setStatus(result.status);
-              setNotice("账号已切换，新请求立即生效。");
+              setNotice(
+                t("Account switched. New requests use it immediately."),
+              );
             });
           }}
           onProviderChange={(provider) => {
@@ -278,8 +293,8 @@ export default function Settings() {
               setStatus(await api<Status>("/api/status"));
               setNotice(
                 provider
-                  ? `已切换到 ${provider}。`
-                  : "已停用 Provider，新请求将返回 503。",
+                  ? t("Switched to {0}.", [provider])
+                  : t("Provider disabled. New requests will return 503."),
               );
             });
           }}
@@ -293,7 +308,7 @@ export default function Settings() {
               <div>
                 {status?.state === "running" && status.address ? (
                   <div className="endpoint">
-                    <span className="endpoint-label">代理地址</span>
+                    <span className="endpoint-label">{t("Proxy address")}</span>
                     <div className="endpoint-row">
                       <code title={status.address}>{status.address}</code>
                       <Button
@@ -306,22 +321,28 @@ export default function Settings() {
                             await navigator.clipboard.writeText(status.address);
                             setCopiedAddress(status.address);
                           } catch {
-                            setError("复制失败，请选中地址后手动复制。");
+                            setError(
+                              t(
+                                "Could not copy. Select the address and copy it manually.",
+                              ),
+                            );
                           }
                         }}
                       >
                         <span aria-live="polite">
                           {copiedAddress === status.address
-                            ? "已复制"
-                            : "复制地址"}
+                            ? t("Copied")
+                            : t("Copy address")}
                         </span>
                       </Button>
                     </div>
                   </div>
                 ) : (
-                  <strong>代理尚未启动</strong>
+                  <strong>{t("Proxy is not running")}</strong>
                 )}
-                {status?.pending && <p>配置已保存，重启后生效。</p>}
+                {status?.pending && (
+                  <p>{t("Configuration saved. Restart to apply changes.")}</p>
+                )}
               </div>
               <div className="buttons">
                 <Button
@@ -334,7 +355,7 @@ export default function Settings() {
                     })
                   }
                 >
-                  启动
+                  {t("Start")}
                 </Button>
 
                 <Button
@@ -347,7 +368,7 @@ export default function Settings() {
                     })
                   }
                 >
-                  停止
+                  {t("Stop")}
                 </Button>
               </div>
             </div>
@@ -355,7 +376,9 @@ export default function Settings() {
           {offline && (
             <Alert variant="destructive" className="message error" role="alert">
               <AlertDescription>
-                无法连接 TokenHub。请从菜单栏重新打开客户端，再刷新页面。
+                {t(
+                  "Cannot connect to TokenHub. Reopen the app from the menu bar, then refresh this page.",
+                )}
               </AlertDescription>
             </Alert>
           )}
@@ -371,14 +394,16 @@ export default function Settings() {
           )}
           {!config ? (
             <div className="empty">
-              {error ? "配置加载失败。" : "正在加载配置…"}
+              {error
+                ? t("Could not load configuration.")
+                : t("Loading configuration…")}
               {error && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => location.reload()}
                 >
-                  重新加载
+                  {t("Reload")}
                 </Button>
               )}
             </div>
@@ -386,13 +411,13 @@ export default function Settings() {
             <>
               {tab !== "yaml" && !cfg && (
                 <div className="message error">
-                  YAML 无法解析。
+                  {t("Could not parse YAML.")}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => choose("yaml")}
                   >
-                    打开完整 YAML
+                    {t("Open full YAML")}
                   </Button>
                 </div>
               )}
@@ -441,10 +466,10 @@ export default function Settings() {
                 <footer className="savebar">
                   <span>
                     {dirty
-                      ? "有未保存的修改"
+                      ? t("Unsaved changes")
                       : status?.pending
-                        ? "已保存，待重启"
-                        : "配置已保存"}
+                        ? t("Saved, restart required")
+                        : t("Configuration saved")}
                   </span>
                   <div className="buttons">
                     <Button
@@ -452,12 +477,19 @@ export default function Settings() {
                       size="sm"
                       disabled={locked}
                       onClick={() => {
-                        if (dirty && !confirm("重新加载会放弃当前草稿，继续？"))
+                        if (
+                          dirty &&
+                          !confirm(
+                            t(
+                              "Reloading will discard the current draft. Continue?",
+                            ),
+                          )
+                        )
                           return;
                         void perform(reload);
                       }}
                     >
-                      重新加载
+                      {t("Reload")}
                     </Button>
                     <Button
                       size="sm"
@@ -465,7 +497,7 @@ export default function Settings() {
                       disabled={locked || !dirty || !!yamlError}
                       onClick={() => perform(save)}
                     >
-                      保存配置
+                      {t("Save configuration")}
                     </Button>
                     <Button
                       variant="outline"
@@ -478,7 +510,7 @@ export default function Settings() {
                       }
                       onClick={() => perform(restart)}
                     >
-                      {restarting ? "重启中…" : "重启并应用"}
+                      {restarting ? t("Restarting…") : t("Restart and apply")}
                     </Button>
                   </div>
                 </footer>

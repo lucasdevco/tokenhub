@@ -668,3 +668,16 @@ input[type="file"] {
   display: flex;
   width: 100%;
 }
+
+.language-select {
+  padding: 8px;
+}
+.language-select select {
+  width: 100%;
+  min-width: 100px;
+}
+.language-select [role="alert"] {
+  display: block;
+  color: var(--danger);
+  font-size: 12px;
+}

@@ -1,3 +1,4 @@
+import { t, useLocale } from "../i18n";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -20,15 +21,18 @@ export default function YamlSettings({
   setNotice,
   perform,
 }: Props) {
+  useLocale();
   return (
     <section>
-      <h1>完整 YAML</h1>
+      <h1>{t("Full YAML")}</h1>
       <p className="intro">
-        与表单共用同一份草稿。表单编辑保留未知字段、变量引用和 YAML 注释。
+        {t(
+          "Shares the same draft as the form. Form edits preserve unknown fields, variable references, and YAML comments.",
+        )}
       </p>
       <Textarea
         className="yaml-editor"
-        aria-label="完整 YAML 配置"
+        aria-label={t("Full YAML configuration")}
         spellCheck={false}
         value={draft}
         onChange={(e) => {
@@ -48,11 +52,11 @@ export default function YamlSettings({
         onClick={() =>
           perform(async () => {
             await api("/api/config/validate", { yaml: draft });
-            setNotice("配置校验通过。");
+            setNotice(t("Configuration is valid."));
           })
         }
       >
-        校验配置
+        {t("Validate configuration")}
       </Button>
     </section>
   );

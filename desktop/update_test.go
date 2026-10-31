@@ -9,6 +9,8 @@ import (
 )
 
 func TestUpdatePanelAndWindowStates(t *testing.T) {
+	language.Store("zh-CN")
+	t.Cleanup(func() { language.Store("en") })
 	for _, test := range []struct {
 		phase updatePhase
 		label string

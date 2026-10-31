@@ -1,3 +1,4 @@
+import { t, useLocale } from "../i18n";
 import { SegmentedControl } from "../components/ui/segmented-control";
 import { Button } from "../components/ui/button";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -23,6 +24,7 @@ export default function CapturePanel({
   file?: boolean;
   collapseBody?: boolean;
 }) {
+  useLocale();
   const [view, setView] = useState<View>("raw");
   const [following, setFollowing] = useState(true);
   const [rawOffset, setRawOffset] = useState(0);
@@ -40,7 +42,7 @@ export default function CapturePanel({
     revision,
     selection,
   );
-  const response = title === "响应" && !file;
+  const response = title === t("Response") && !file;
   const collapsible = collapseBody && view !== "hex";
   const rawRequest = useMemo(() => {
     const text = capture.raw?.text || "";
@@ -97,23 +99,23 @@ export default function CapturePanel({
         <h3>{title}</h3>
         {name && (
           <a href={downloadURL(name)} download={name}>
-            下载完整文件
+            {t("Download full file")}
           </a>
         )}
       </div>
       <div className="capture-controls">
         <SegmentedControl
           className="capture-view-options"
-          aria-label="查看方式"
+          aria-label={t("View mode")}
           value={view}
           onValueChange={(value) => {
             setView(value as View);
             setRawOffset(0);
           }}
           options={[
-            { value: "stream", label: "实时预览 / JSON" },
-            { value: "raw", label: "原始文本" },
-            { value: "hex", label: "十六进制" },
+            { value: "stream", label: t("Live preview / JSON") },
+            { value: "raw", label: t("Raw text") },
+            { value: "hex", label: t("Hexadecimal") },
           ].filter((option) => !file || option.value !== "stream")}
         />
         {view === "stream" && (
@@ -122,7 +124,7 @@ export default function CapturePanel({
             size="sm"
             onClick={() => setFollowing((value) => !value)}
           >
-            {following ? "暂停流" : "继续流"}
+            {following ? t("Pause stream") : t("Resume stream")}
           </Button>
         )}
         <span role="status">{capture.status}</span>
@@ -140,12 +142,12 @@ export default function CapturePanel({
             disabled={rawOffset === 0}
             onClick={() => setRawOffset((value) => Math.max(0, value - 65536))}
           >
-            上 64 KiB
+            {t("Previous 64 KiB")}
           </Button>
           <span>
             {capture.raw
               ? `${capture.raw.page.offset.toLocaleString()}–${capture.raw.page.next.toLocaleString()} / ${bytes(capture.raw.page.size)}`
-              : "正在读取…"}
+              : t("Reading…")}
           </span>
           <Button
             variant="outline"
@@ -155,13 +157,15 @@ export default function CapturePanel({
             }
             onClick={() => setRawOffset((value) => value + 65536)}
           >
-            下 64 KiB
+            {t("Next 64 KiB")}
           </Button>
         </div>
       )}
       {view === "stream" && (
         <p className="logs-footnote">
-          预览保留最近 2 MiB 文本和最多 300 个事件；原始文件不受限制。
+          {t(
+            "Preview keeps the latest 2 MiB of text and up to 300 events. Raw files have no limit.",
+          )}
         </p>
       )}
       <div
@@ -176,7 +180,7 @@ export default function CapturePanel({
       >
         {view === "stream" && capture.preview.headers && (
           <details className="capture-headers">
-            <summary>HTTP 请求头 / 响应头</summary>
+            <summary>{t("HTTP headers")}</summary>
             <pre>{capture.preview.headers}</pre>
           </details>
         )}
@@ -217,7 +221,7 @@ export default function CapturePanel({
       </div>
       {responseEmpty && (
         <p className="capture-body-empty" role="status">
-          暂无响应体
+          {t("No response body")}
         </p>
       )}
       {response &&
@@ -226,7 +230,7 @@ export default function CapturePanel({
         !capture.raw &&
         !capture.error && (
           <p className="capture-body-empty" role="status">
-            正在加载响应体…
+            {t("Loading response body…")}
           </p>
         )}
       {collapsible && bodyLong && (
@@ -244,8 +248,10 @@ export default function CapturePanel({
             <ChevronDown aria-hidden="true" />
           )}
           {bodyExpanded
-            ? `收起${title} body`
-            : `展开完整${title} body（默认展示前 20 行）`}
+            ? t("Collapse {0} body", [title])
+            : t("Expand full {0} body (first 20 lines shown by default)", [
+                title,
+              ])}
         </Button>
       )}
     </section>
