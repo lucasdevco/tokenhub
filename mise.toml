@@ -27,7 +27,7 @@ description = "Build the CLI, desktop app, and installer with the embedded front
 depends = ["build:web", "desktop"]
 run = """
 mkdir -p build
-go build -o build/tokenhub ./cmd/tokenhub
+go build -trimpath -o build/tokenhub ./cmd/tokenhub
 """
 
 [tasks.desktop]

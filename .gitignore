@@ -30,12 +30,36 @@ __pycache__/
 go.work
 go.work.sum
 
-# env file
+# Local environment files (keep shareable examples)
 .env
+.env.*
+!.env.example
+!.env.*.example
 .env-profiles.json
 
+# Local credentials and configuration
 certs/
+*.pem
+*.key
+*.p12
+*.pfx
 config.yaml
+config.*.yaml
+!config.example.yaml
+config.yml
+config.*.yml
+!config.example.yml
+.tokenhub-*
+
+# Runtime databases and logs
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+
 # Desktop and frontend builds
 /build/
 /web/node_modules/
