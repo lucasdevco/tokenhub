@@ -126,6 +126,7 @@ jobs:
         run: bash .release-tools/scripts/setup-apple-signing.sh
 
       - name: Build CLI, app, and DMG
+        timeout-minutes: 10
         env:
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
         run: mise run build
