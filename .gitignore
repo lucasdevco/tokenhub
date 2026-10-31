@@ -6,7 +6,6 @@
 *.dylib
 
 # Command binaries
-/cmd/tokenhub/tokenhub
 /logging-server/logging-server
 
 logs*/

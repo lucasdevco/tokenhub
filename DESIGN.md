@@ -93,8 +93,7 @@ History and request detail share one workspace. Above 800px, the list and
 inspector are side by side; below 800px they stack. Chinese controls match the
 settings page. Live-update pause and stream pause remain separate. The log
 content has a bounded scroll region, safe text rendering, original-file links,
-raw/hex pagination and metadata disclosure. The CLI integrated viewer hides settings
-navigation and retains the read-only API boundary.
+raw/hex pagination and metadata disclosure.
 
 ## Web components: shadcn/ui
 

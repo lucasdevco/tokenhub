@@ -50,19 +50,14 @@ def main():
 
     download = f"{base}/releases/download/{tag}"
     print("## Install\n")
-    print("| Mac | Desktop installer | Command line |")
-    print("| --- | --- | --- |")
+    print("| Mac | Desktop installer |")
+    print("| --- | --- |")
     for label, arch in (("Apple Silicon", "arm64"), ("Intel", "amd64")):
         dmg = f"tokenhub-darwin-{arch}.dmg"
-        cli = f"tokenhub-cli-darwin-{arch}"
-        print(f"| {label} | [{dmg}]({download}/{dmg}) | [{cli}]({download}/{cli}) |")
+        print(f"| {label} | [{dmg}]({download}/{dmg}) |")
     print("\nOpen the DMG and drag tokenhub.app into Applications.")
-    print("For the CLI, download the binary for your Mac and run:\n")
-    print("```sh\nchmod +x tokenhub-cli-darwin-arm64")
-    print('./tokenhub-cli-darwin-arm64 -config "$HOME/.tokenhub/config.yaml"\n```')
-    print("\nOn Intel Macs, replace arm64 with amd64. The web UI is embedded in the binary.")
-    print("The configuration file is created on first launch; add providers in Settings.")
-    print(f"\n[SHA-256 checksums]({download}/SHA256SUMS) cover the installers, CLI, and update files.")
+    print("Add providers and accounts from the menu-bar Settings entry.")
+    print(f"\n[SHA-256 checksums]({download}/SHA256SUMS) cover the installers and update files.")
     print("The menu-bar panel checks for new versions. Click the update entry to download, then restart to apply.")
     history = f"compare/{previous}...{tag}" if previous else f"commits/{tag}"
     print(f"[Full changelog]({base}/{history})")

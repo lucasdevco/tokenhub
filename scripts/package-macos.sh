@@ -10,7 +10,6 @@ arch="${2:?usage: package-macos.sh VERSION ARCH}"
 app="build/darwin-$arch/tokenhub.app"
 dmg="build/darwin-$arch/tokenhub $version $arch.dmg"
 installer="tokenhub-darwin-$arch.dmg"
-cli="tokenhub-cli-darwin-$arch"
 out="build/release"
 mkdir -p "$out"
 
@@ -24,13 +23,11 @@ if [[ "${REQUIRE_NOTARIZATION:-false}" == true ]]; then
   grep -F 'TeamIdentifier=93MJ8HDSM3' <<< "$metadata"
   grep -F 'runtime' <<< "$metadata"
   codesign --verify --strict "$dmg"
-  codesign --verify --strict build/tokenhub
   xcrun stapler validate "$app"
   xcrun stapler validate "$dmg"
   spctl --assess --type execute --verbose=4 "$app"
   spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
 fi
-./build/tokenhub -h
 
 mountpoint="$(mktemp -d)"
 disk=""
@@ -52,8 +49,6 @@ rmdir "$mountpoint"
 trap - EXIT
 
 cp "$dmg" "$out/$installer"
-cp build/tokenhub "$out/$cli"
-"$out/$cli" -h
 manifest="build/darwin-$arch/update-darwin-$arch.json"
 if [[ -f "$manifest" ]]; then
   go run "$(dirname "$0")/verify-update.go" "$manifest" desktop/mygo.json "$version" "$arch"
@@ -64,7 +59,7 @@ elif [[ "${REQUIRE_UPDATES:-false}" == true ]]; then
 fi
 (
   cd "$out"
-  files=("$installer" "$cli")
+  files=("$installer")
   if [[ -f "update-darwin-$arch.json" ]]; then
     files+=("update-darwin-$arch.json" "tokenhub-$version-darwin-$arch.tar.gz")
   fi
