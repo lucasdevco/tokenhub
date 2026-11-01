@@ -15,12 +15,16 @@ remain shared capabilities.
 
 ## Product Purpose
 
-Configure local AI API providers, control the proxy from the menu bar, and inspect
-captured requests in the system browser.
+Make AI API traffic observable locally. Capture requests and responses through a
+local proxy, then inspect prompts, tool calls, streamed content, token usage and
+timing in the system browser to investigate failures and slow responses.
+The macOS menu bar provides proxy controls and provider and account switching.
 
 ## Capabilities and Constraints
 
 - The menu-bar panel alone uses native UI. Settings and logs use the browser.
+- Local request history exposes request and response content, status, token usage,
+  time to first token and generation speed, with search and raw data downloads.
 - Provider CRUD, credentials, logging, common settings and complete YAML editing.
 - Request examples for OpenAI Chat Completions, Responses and Claude Messages,
   with editable parameters, streaming and copyable curl commands.

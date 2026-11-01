@@ -2,15 +2,16 @@
 
 English | [简体中文](README.zh-CN.md)
 
-**Switch AI providers and accounts in one place. See every request.**
+**Local observability for AI APIs. Inspect requests, responses, token usage, and latency.**
 
-TokenHub is a local proxy for AI APIs. Connect your client to TokenHub to switch providers and accounts from the macOS menu bar, then inspect requests, responses, and usage in your browser.
+TokenHub is a local AI API observability tool for macOS. Its proxy captures your client's API traffic so you can inspect prompts, tool calls, streamed responses, token usage, and timing in your browser. Use it to investigate failed requests, unexpected answers, and slow responses. You can also switch providers and accounts from the menu bar.
 
 ## Why use TokenHub?
 
+- **Inspect AI requests and responses.** See prompts, model parameters, tool calls, and streamed content to understand what your client sends and what the model returns.
+- **Investigate failures and slow responses.** Inspect request status and timing, including time to first token and generation speed.
+- **Track token usage and review history.** View token usage per request, search past requests, and download raw data for further analysis. Logs stay on your machine and remain available while the proxy is stopped.
 - **Switch providers without reconfiguring your client.** Use one local address for OpenRouter, Anthropic, LM Studio, and other services, with multiple accounts per provider.
-- **See what your client sends.** Inspect full requests and responses, including prompts, model parameters, tool calls, and streamed content, to investigate failed requests or unexpected answers.
-- **Check usage and speed.** View token usage, time to first token, and generation speed. Search past requests and download the raw data.
 
 TokenHub preserves your client's API protocol. It does not convert between protocols, so the selected provider must support the interface and model your client uses.
 
